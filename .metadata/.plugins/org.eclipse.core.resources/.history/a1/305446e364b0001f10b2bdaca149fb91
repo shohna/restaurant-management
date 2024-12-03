@@ -1,0 +1,342 @@
+//import java.awt.BorderLayout;
+//import java.awt.GridLayout;
+//
+//import javax.swing.*;
+//
+//public class DisplayList extends JFrame {
+//
+//	public DisplayList() {
+//		JPanel dataPanel = new JPanel();
+//		dataPanel.setLayout(new GridLayout(4,3));
+//		JLabel customerId = new JLabel("Last Name");
+//		JTextField customerIdField = new JTextField(15);
+//		customerIdField.setText("Aa20BDe68eAb0e9");
+//		customerIdField.setEditable(false);
+//		JLabel lastName = new JLabel("Last Name");
+//		JLabel firstName = new JLabel("First Name");
+//		JLabel company = new JLabel("Company");
+//		JLabel phone1 = new JLabel("Phone 1");
+//		JLabel phone2 = new JLabel("Phone 2");
+//		JLabel city = new JLabel("City");
+//		JLabel country = new JLabel("Country");
+//		JLabel email = new JLabel("Email");
+//		JLabel subDate = new JLabel("Subscription Date");
+//		JLabel website = new JLabel("Website");
+//		JTextField lastNameField = new JTextField(10);
+//		/* 
+//		 *  "Hawkins", "Gerald", "New Alberttown", "Canada",
+//					"uwarner@steele-arias.com", "2021-03-19"
+//		 * 
+//		 */
+//		lastNameField.setText("Hawkins");
+//		JTextField firstNameField = new JTextField(10);
+//		firstNameField.setText("Gerald");
+//		JTextField companyField = new JTextField(20);
+//		companyField.setText("Phelps, Forbes and Koch");
+//		JTextField phone1Field = new JTextField(20);
+//		phone1Field.setText("+1-323-239-1456x96168");
+//		JTextField phone2Field = new JTextField(20);
+//		phone2Field.setText("(092)508-0269");
+//		JTextField cityField = new JTextField(10);
+//		cityField.setText("New Alberttown");
+//		JTextField countryField = new JTextField(10);
+//		countryField.setText("Canada");
+//		JTextField subDateField = new JTextField(10);
+//		subDateField.setText("2021-03-19");
+//		JTextField websiteField = new JTextField(20);
+//		websiteField.setText("https://valenzuela.com/");
+//		JTextField emailField = new JTextField(20);
+//		emailField.setText("uwarner@steele-arias.com");
+//		JPanel dp1 = new JPanel();
+//		dp1.add(customerId);
+//		dp1.add(customerIdField);
+//		dataPanel.add(dp1);
+//		JPanel dp2 = new JPanel();
+//		dp2.add(lastName);
+//		dp2.add(lastNameField);
+//		dataPanel.add(dp2);
+//
+//		JPanel dp3 = new JPanel();
+//		dp3.add(firstName);
+//		dp3.add(firstNameField);
+//
+//		dataPanel.add(dp3);
+//
+//		JPanel dp4 = new JPanel();
+//		dp4.add(company);
+//		dp4.add(companyField);
+//		dataPanel.add(dp4);
+//
+//
+//		JPanel dp5 = new JPanel();
+//		dp5.add(city);
+//		dp5.add(cityField);
+//		dataPanel.add(dp5);
+//
+//		JPanel dp6 = new JPanel();
+//		dp6.add(country);
+//		dp6.add(countryField);
+//		dataPanel.add(dp6);
+//
+//		JPanel dp7 = new JPanel();
+//		dp7.add(phone1);
+//		dp7.add(phone1Field);
+//		dataPanel.add(dp7);
+//
+//		JPanel dp8 = new JPanel();
+//		dp8.add(phone2);
+//		dp8.add(phone2Field);
+//		dataPanel.add(dp8);
+//
+//		JPanel dp9 = new JPanel();
+//		dp9.add(email);
+//		dp9.add(emailField);
+//		dataPanel.add(dp9);
+//
+//		JPanel dp10 = new JPanel();
+//		dp10.add(subDate);
+//		dp10.add(subDateField);
+//		dataPanel.add(dp10);
+//
+//		JPanel dp11 = new JPanel();
+//		dp11.add(website);
+//		dp11.add(websiteField);
+//
+//		dataPanel.add(dp11);
+//		this.add(dataPanel);
+//		JPanel buttonPanel = new JPanel();
+//		buttonPanel.add(new JButton("Update"));
+//		buttonPanel.add(new JButton("Delete"));
+//		buttonPanel.add(new JButton("Cancel"));
+//		this.add(buttonPanel, BorderLayout.SOUTH);
+//		this.setSize(800, 400);
+//	}
+//	
+//	public static void main(String[] args) {
+//
+//	}
+//}
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.sql.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+
+public class DisplayList extends JFrame {
+    private JTextField customerIdField, lastNameField, firstNameField, 
+                       companyField, phone1Field, phone2Field, 
+                       cityField, countryField, emailField, 
+                       subDateField, websiteField;
+    
+    private Connection conn;
+    private String originalCustomerId;
+    
+    public DisplayList(Connection conn, ResultSet rs) {
+        this.conn = conn;
+        
+        try {
+            originalCustomerId = rs.getString("customer_id");
+            
+            setLayout(new BorderLayout());
+            JPanel dataPanel = new JPanel(new GridBagLayout());
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(5, 5, 5, 5);
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+            
+            addField(dataPanel, gbc, "Customer ID", 
+                     customerIdField = createReadOnlyTextField(rs.getString("customer_id")), 0);
+            
+            addField(dataPanel, gbc, "Last Name", 
+                     lastNameField = createEditableTextField(rs.getString("last_name")), 1);
+            
+            addField(dataPanel, gbc, "First Name", 
+                     firstNameField = createEditableTextField(rs.getString("first_name")), 2);
+            
+            addField(dataPanel, gbc, "Company", 
+                     companyField = createEditableTextField(rs.getString("company")), 3);
+            
+            addField(dataPanel, gbc, "Phone 1", 
+                     phone1Field = createEditableTextField(rs.getString("phone1")), 4);
+            
+            addField(dataPanel, gbc, "Phone 2", 
+                     phone2Field = createEditableTextField(rs.getString("phone2")), 5);
+            
+            addField(dataPanel, gbc, "City", 
+                     cityField = createEditableTextField(rs.getString("city")), 6);
+            
+            addField(dataPanel, gbc, "Country", 
+                     countryField = createEditableTextField(rs.getString("country")), 7);
+            
+            addField(dataPanel, gbc, "Email", 
+                     emailField = createEditableTextField(rs.getString("email")), 8);
+            
+            addField(dataPanel, gbc, "Subscription Date", 
+                     subDateField = createEditableTextField(rs.getString("subscription_date")), 9);
+            
+            addField(dataPanel, gbc, "Website", 
+                     websiteField = createEditableTextField(rs.getString("website")), 10);
+            
+            JScrollPane scrollPane = new JScrollPane(dataPanel);
+            add(scrollPane, BorderLayout.CENTER);
+            
+            JPanel buttonPanel = new JPanel();
+            JButton updateButton = new JButton("Update");
+            updateButton.addActionListener(new UpdateButtonListener());
+            
+            JButton deleteButton = new JButton("Delete");
+            deleteButton.addActionListener(new DeleteButtonListener());
+            
+            JButton cancelButton = new JButton("Cancel");
+            cancelButton.addActionListener(e -> dispose());
+            
+            buttonPanel.add(updateButton);
+            buttonPanel.add(deleteButton);
+            buttonPanel.add(cancelButton);
+            
+            add(buttonPanel, BorderLayout.SOUTH);
+            
+            // Set size and other properties
+            setSize(800, 600);
+            setTitle("Customer Details");
+            setLocationRelativeTo(null);
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error loading customer details");
+        }
+    }
+    
+    private void addField(JPanel panel, GridBagConstraints gbc, 
+                           String labelText, JTextField textField, int row) {
+        gbc.gridx = 0;
+        gbc.gridy = row;
+        gbc.weightx = 0.3;
+        panel.add(new JLabel(labelText), gbc);
+        
+        gbc.gridx = 1;
+        gbc.weightx = 0.7;
+        panel.add(textField, gbc);
+    }
+    
+    private JTextField createReadOnlyTextField(String text) {
+        JTextField textField = new JTextField(text, 30);
+        textField.setEditable(false);
+        return textField;
+    }
+    
+    private JTextField createEditableTextField(String text) {
+        return new JTextField(text, 30);
+    }
+    
+    private class UpdateButtonListener implements ActionListener {
+        public void actionPerformed(ActionEvent e) {
+            try {
+                if (lastNameField.getText().trim().isEmpty()) {
+                    JOptionPane.showMessageDialog(DisplayList.this, 
+                        "Last Name is required", 
+                        "Validation Error", 
+                        JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                
+                // Prepare update statement
+                String updateQuery = "UPDATE customers SET " +
+                    "last_name = ?, first_name = ?, company = ?, " +
+                    "phone1 = ?, phone2 = ?, city = ?, country = ?, " +
+                    "email = ?, subscription_date = ?, website = ? " +
+                    "WHERE customer_id = ?";
+                
+                PreparedStatement pstmt = conn.prepareStatement(updateQuery);
+                
+                // Set parameters
+                pstmt.setString(1, lastNameField.getText().trim());
+                pstmt.setString(2, firstNameField.getText().trim());
+                pstmt.setString(3, companyField.getText().trim());
+                pstmt.setString(4, phone1Field.getText().trim());
+                pstmt.setString(5, phone2Field.getText().trim());
+                pstmt.setString(6, cityField.getText().trim());
+                pstmt.setString(7, countryField.getText().trim());
+                pstmt.setString(8, emailField.getText().trim());
+                
+                // Parse and convert subscription date
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                try {
+                    java.util.Date parsedDate = sdf.parse(subDateField.getText().trim());
+                    pstmt.setDate(9, new java.sql.Date(parsedDate.getTime()));
+                } catch (ParseException ex) {
+                    pstmt.setNull(9, java.sql.Types.DATE);
+                }
+                
+                pstmt.setString(10, websiteField.getText().trim());
+                pstmt.setString(11, originalCustomerId);
+                
+                // Execute update
+                int rowsAffected = pstmt.executeUpdate();
+                
+                if (rowsAffected > 0) {
+                    JOptionPane.showMessageDialog(DisplayList.this, 
+                        "Customer updated successfully");
+                    dispose();
+                } else {
+                    JOptionPane.showMessageDialog(DisplayList.this, 
+                        "No customer found to update", 
+                        "Update Error", 
+                        JOptionPane.ERROR_MESSAGE);
+                }
+                
+                pstmt.close();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(DisplayList.this, 
+                    "Error updating customer", 
+                    "Database Error", 
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+    
+    private class DeleteButtonListener implements ActionListener {
+        public void actionPerformed(ActionEvent e) {
+            // Confirm deletion
+            int confirm = JOptionPane.showConfirmDialog(
+                DisplayList.this, 
+                "Are you sure you want to delete this customer?", 
+                "Confirm Deletion", 
+                JOptionPane.YES_NO_OPTION
+            );
+            
+            if (confirm == JOptionPane.YES_OPTION) {
+                try {
+                    // Prepare delete statement
+                    String deleteQuery = "DELETE FROM customers WHERE customer_id = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(deleteQuery);
+                    pstmt.setString(1, originalCustomerId);
+                    
+                    // Execute delete
+                    int rowsAffected = pstmt.executeUpdate();
+                    
+                    if (rowsAffected > 0) {
+                        JOptionPane.showMessageDialog(DisplayList.this, 
+                            "Customer deleted successfully");
+                        dispose();
+                    } else {
+                        JOptionPane.showMessageDialog(DisplayList.this, 
+                            "No customer found to delete", 
+                            "Delete Error", 
+                            JOptionPane.ERROR_MESSAGE);
+                    }
+                    
+                    pstmt.close();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(DisplayList.this, 
+                        "Error deleting customer", 
+                        "Database Error", 
+                        JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }
+    }
+}

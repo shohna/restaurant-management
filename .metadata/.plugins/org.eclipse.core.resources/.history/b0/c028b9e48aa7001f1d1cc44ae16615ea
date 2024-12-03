@@ -1,0 +1,157 @@
+//import java.awt.BorderLayout;
+//import java.awt.GridLayout;
+//
+//import javax.swing.*;
+//
+//public class DisplayList extends JFrame {
+//
+//	public DisplayList() {
+//		JPanel dataPanel = new JPanel();
+//		dataPanel.setLayout(new GridLayout(4,3));
+//		JLabel customerId = new JLabel("Last Name");
+//		JTextField customerIdField = new JTextField(15);
+//		customerIdField.setText("Aa20BDe68eAb0e9");
+//		customerIdField.setEditable(false);
+//		JLabel lastName = new JLabel("Last Name");
+//		JLabel firstName = new JLabel("First Name");
+//		JLabel company = new JLabel("Company");
+//		JLabel phone1 = new JLabel("Phone 1");
+//		JLabel phone2 = new JLabel("Phone 2");
+//		JLabel city = new JLabel("City");
+//		JLabel country = new JLabel("Country");
+//		JLabel email = new JLabel("Email");
+//		JLabel subDate = new JLabel("Subscription Date");
+//		JLabel website = new JLabel("Website");
+//		JTextField lastNameField = new JTextField(10);
+//		/* 
+//		 *  "Hawkins", "Gerald", "New Alberttown", "Canada",
+//					"uwarner@steele-arias.com", "2021-03-19"
+//		 * 
+//		 */
+//		lastNameField.setText("Hawkins");
+//		JTextField firstNameField = new JTextField(10);
+//		firstNameField.setText("Gerald");
+//		JTextField companyField = new JTextField(20);
+//		companyField.setText("Phelps, Forbes and Koch");
+//		JTextField phone1Field = new JTextField(20);
+//		phone1Field.setText("+1-323-239-1456x96168");
+//		JTextField phone2Field = new JTextField(20);
+//		phone2Field.setText("(092)508-0269");
+//		JTextField cityField = new JTextField(10);
+//		cityField.setText("New Alberttown");
+//		JTextField countryField = new JTextField(10);
+//		countryField.setText("Canada");
+//		JTextField subDateField = new JTextField(10);
+//		subDateField.setText("2021-03-19");
+//		JTextField websiteField = new JTextField(20);
+//		websiteField.setText("https://valenzuela.com/");
+//		JTextField emailField = new JTextField(20);
+//		emailField.setText("uwarner@steele-arias.com");
+//		JPanel dp1 = new JPanel();
+//		dp1.add(customerId);
+//		dp1.add(customerIdField);
+//		dataPanel.add(dp1);
+//		JPanel dp2 = new JPanel();
+//		dp2.add(lastName);
+//		dp2.add(lastNameField);
+//		dataPanel.add(dp2);
+//
+//		JPanel dp3 = new JPanel();
+//		dp3.add(firstName);
+//		dp3.add(firstNameField);
+//
+//		dataPanel.add(dp3);
+//
+//		JPanel dp4 = new JPanel();
+//		dp4.add(company);
+//		dp4.add(companyField);
+//		dataPanel.add(dp4);
+//
+//
+//		JPanel dp5 = new JPanel();
+//		dp5.add(city);
+//		dp5.add(cityField);
+//		dataPanel.add(dp5);
+//
+//		JPanel dp6 = new JPanel();
+//		dp6.add(country);
+//		dp6.add(countryField);
+//		dataPanel.add(dp6);
+//
+//		JPanel dp7 = new JPanel();
+//		dp7.add(phone1);
+//		dp7.add(phone1Field);
+//		dataPanel.add(dp7);
+//
+//		JPanel dp8 = new JPanel();
+//		dp8.add(phone2);
+//		dp8.add(phone2Field);
+//		dataPanel.add(dp8);
+//
+//		JPanel dp9 = new JPanel();
+//		dp9.add(email);
+//		dp9.add(emailField);
+//		dataPanel.add(dp9);
+//
+//		JPanel dp10 = new JPanel();
+//		dp10.add(subDate);
+//		dp10.add(subDateField);
+//		dataPanel.add(dp10);
+//
+//		JPanel dp11 = new JPanel();
+//		dp11.add(website);
+//		dp11.add(websiteField);
+//
+//		dataPanel.add(dp11);
+//		this.add(dataPanel);
+//		JPanel buttonPanel = new JPanel();
+//		buttonPanel.add(new JButton("Update"));
+//		buttonPanel.add(new JButton("Delete"));
+//		buttonPanel.add(new JButton("Cancel"));
+//		this.add(buttonPanel, BorderLayout.SOUTH);
+//		this.setSize(800, 400);
+//	}
+//	
+//	public static void main(String[] args) {
+//
+//	}
+//}
+
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.sql.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+
+public class DisplayList extends JFrame {
+    private JTextField customerIdField, lastNameField, firstNameField, companyField, 
+                       phone1Field, phone2Field, cityField, countryField, 
+                       emailField, subDateField, websiteField;
+    
+    private Connection conn;
+    private String originalCustomerId;
+    
+    public DisplayList(Connection conn, ResultSet rs) {
+        this.conn = conn;
+        
+        try {
+            // Populate fields with retrieved data
+            originalCustomerId = rs.getString("customer_id");
+            
+            JPanel dataPanel = new JPanel(new GridLayout(11, 2));
+            
+            // Customer ID (read-only)
+            customerIdField = createReadOnlyTextField(rs.getString("customer_id"));
+            dataPanel.add(new JLabel("Customer ID"));
+            dataPanel.add(customerIdField);
+            
+            // Last Name (required)
+            lastNameField = createEditableTextField(rs.getString("last_name"));
+            dataPanel.add(new JLabel("Last Name"));
+            dataPanel.add(lastNameField);
+            
+            // First Name
+            firstNameField = createEditableTextField(rs.getString("first_name"));
+            dataPanel.add(new JLabel("First Name"));

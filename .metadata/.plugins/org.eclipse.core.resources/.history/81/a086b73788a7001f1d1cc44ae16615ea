@@ -1,0 +1,42 @@
+//
+//public class IngestCSV {
+//	// this code should read in the CSV file and put it in
+//	// a sqlite db table
+//}
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+
+public class IngestCSV {
+    public static void main(String[] args) {
+        String url = "jdbc:sqlite:corporatedata.db";
+        String csvFile = "customers.csv";
+        String line;
+        String cvsSplitBy = ",";
+
+        try (Connection conn = DriverManager.getConnection(url);
+             BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
+
+            String sql = "INSERT INTO customer(first_name, last_name, city, country, email, subscription_date) VALUES(?,?,?,?,?,?)";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+
+            while ((line = br.readLine()) != null) {
+                String[] customer = line.split(cvsSplitBy);
+
+                pstmt.setString(1, customer[1]); // Assuming first_name is the second column
+                pstmt.setString(2, customer[2]); // Assuming last_name is the third column
+                pstmt.setString(3, customer[3]); // city
+                pstmt.setString(4, customer[4]); // country
+                pstmt.setString(5, customer[5]); // email
+                pstmt.setString(6, customer[6]); // subscription_date
+                pstmt.executeUpdate();
+            }
+            System.out.println("Data inserted.");
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
+}

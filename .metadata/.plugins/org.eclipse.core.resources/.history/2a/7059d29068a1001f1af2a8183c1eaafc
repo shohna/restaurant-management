@@ -1,0 +1,109 @@
+package threadpool;
+
+import java.io.*;
+import java.nio.file.*;
+import java.util.*;
+import java.util.concurrent.*;
+
+public class ThreadpoolWordCount {
+    private Map<String, Integer> wordCount = new ConcurrentHashMap<>();
+    
+    public Map<String, Integer> countWords(List<String> filePaths) {
+        long startTime = System.currentTimeMillis();
+        
+        int processors = Runtime.getRuntime().availableProcessors();
+        ExecutorService executor = Executors.newFixedThreadPool(processors);
+        List<Future<?>> futures = new ArrayList<>();
+        
+        for (String filePath : filePaths) {
+            Future<?> future = executor.submit(() -> processFile(filePath));
+            futures.add(future);
+        }
+        
+        for (Future<?> future : futures) {
+            try {
+                future.get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
+        
+        executor.shutdown();
+        try {
+            executor.awaitTermination(1, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        
+        long endTime = System.currentTimeMillis();
+        System.out.println("ThreadPool (" + processors + " threads) execution time: " + 
+                          (endTime - startTime) + "ms");
+        return wordCount;
+    }
+    
+    private void processFile(String filePath) {
+        try {
+            List<String> lines = Files.readAllLines(Paths.get(filePath));
+            for (String line : lines) {
+                if (line.trim().isEmpty()) continue;
+                
+                String cleanedLine = line.toLowerCase()
+                    .replaceAll("[^a-zA-Z\\s]", "")
+                    .trim();
+                
+                String[] words = cleanedLine.split("\\s+");
+                for (String word : words) {
+                    if (!word.isEmpty()) {
+                        wordCount.merge(word, 1, Integer::sum);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) {
+        String directoryPath = "C:\\Users\\Devyanii\\Desktop\\JAVA\\A8\\Assignment8\\Assignment8\\";
+        List<String> filePaths = getFilePaths(directoryPath);
+        
+        if (filePaths.isEmpty()) {
+            System.err.println("No files found in the directory!");
+            return;
+        }
+
+        System.out.println("Number of processors available: " + 
+                          Runtime.getRuntime().availableProcessors());
+        System.out.println("Number of files to process: " + filePaths.size());
+        System.out.println("\n--- Starting ThreadPool Word Count ---\n");
+        
+        ThreadpoolWordCount counter = new ThreadpoolWordCount();
+        Map<String, Integer> result = counter.countWords(filePaths);
+        printTopWords(result, 10);
+    }
+    
+    private static List<String> getFilePaths(String directoryPath) {
+        File directory = new File(directoryPath);
+        List<String> filePaths = new ArrayList<>();
+        
+        if (directory.exists() && directory.isDirectory()) {
+            for (int i = 1; i <= 20; i++) {
+                File file = new File(directory, "dracula" + i);
+                if (file.exists() && !file.isDirectory()) {
+                    filePaths.add(file.getAbsolutePath());
+                }
+            }
+            Collections.sort(filePaths);
+        }
+        
+        return filePaths;
+    }
+    
+    private static void printTopWords(Map<String, Integer> wordCount, int topN) {
+        System.out.println("\nTop " + topN + " most frequent words:");
+        wordCount.entrySet().stream()
+            .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+            .limit(topN)
+            .forEach(entry -> System.out.printf("%-20s: %d%n", entry.getKey(), entry.getValue()));
+    }
+}

@@ -1,0 +1,80 @@
+package unthreaded;
+
+import java.io.*;
+import java.nio.file.*;
+import java.util.*;
+import java.util.concurrent.*;
+
+public class UnthreadedWordCount {
+    private Map<String, Integer> wordCount = new ConcurrentHashMap<>();
+    
+    public Map<String, Integer> countWords(List<String> filePaths) {
+        long startTime = System.currentTimeMillis();
+        
+        for (String filePath : filePaths) {
+            processFile(filePath);
+        }
+        
+        long endTime = System.currentTimeMillis();
+        System.out.println("Unthreaded execution time: " + (endTime - startTime) + "ms");
+        return wordCount;
+    }
+    
+    private void processFile(String filePath) {
+        try {
+            List<String> lines = Files.readAllLines(Paths.get(filePath));
+            for (String line : lines) {
+                if (line.trim().isEmpty()) continue;
+                
+                String cleanedLine = line.toLowerCase()
+                    .replaceAll("[^a-zA-Z\\s]", "")
+                    .trim();
+                
+                String[] words = cleanedLine.split("\\s+");
+                for (String word : words) {
+                    if (!word.isEmpty()) {
+                        wordCount.merge(word, 1, Integer::sum);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) {
+        String directoryPath = "C:\\Users\\Devyanii\\Desktop\\JAVA\\A8\\Assignment8\\Assignment8\\";
+        List<String> filePaths = getFilePaths(directoryPath);
+        System.out.println("Number of files to process: " + filePaths.size());
+        System.out.println("Starting Unthreaded Word Count:");
+        
+        UnthreadedWordCount counter = new UnthreadedWordCount();
+        Map<String, Integer> result = counter.countWords(filePaths);
+        printTopWords(result, 10);
+    }
+    
+    private static List<String> getFilePaths(String directoryPath) {
+        File directory = new File(directoryPath);
+        List<String> filePaths = new ArrayList<>();
+        
+        if (directory.exists() && directory.isDirectory()) {
+            for (int i = 1; i <= 20; i++) {
+                File file = new File(directory, "dracula" + i);
+                if (file.exists() && !file.isDirectory()) {
+                    filePaths.add(file.getAbsolutePath());
+                }
+            }
+            Collections.sort(filePaths);
+        }
+        
+        return filePaths;
+    }
+    
+    private static void printTopWords(Map<String, Integer> wordCount, int topN) {
+        System.out.println("\nTop " + topN + " most frequent words:");
+        wordCount.entrySet().stream()
+            .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+            .limit(topN)
+            .forEach(entry -> System.out.printf("%-20s: %d%n", entry.getKey(), entry.getValue()));
+    }
+}

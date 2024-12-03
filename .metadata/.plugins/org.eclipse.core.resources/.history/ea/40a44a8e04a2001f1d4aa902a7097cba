@@ -1,0 +1,36 @@
+Answer 1: 
+The "Buffer beyond capacity" error occurs in SharedBuffer.java on line 20 due to a race condition. 
+The issue stems from the non-atomic nature of the check-then-act sequence in the produce method:
+
+Thread A checks buffer.size() >= capacity (false)
+Thread B checks buffer.size() >= capacity (false)
+Thread A adds an item
+Thread B adds an item
+
+As the size check and add operation aren't atomic, 
+multiple producers can simultaneously pass the size check and add items, 
+potentially exceeding the capacity. 
+Using Thread.yield() makes the problem worse by increasing the chance of thread interleaving.
+
+Answer 2: 
+The null retrieval issue in Consumer.java (line 17) occurs due to a similar race condition in the 
+consume method:
+
+Consumer A checks buffer.isEmpty() (false)
+Consumer B checks buffer.isEmpty() (false)
+Consumer A polls the last item
+Consumer B polls (returns null since buffer is now empty)
+
+The check for emptiness and the poll operation aren't atomic, 
+so multiple consumers can pass the empty check but only one will get the last item, 
+while others get null.
+
+
+Both issues stem from:
+
+Lack of proper synchronization
+Non-atomic operations on the shared buffer
+Busy waiting with Thread.yield() which doesn't provide any guarantees
+
+The current implementation attempts to handle concurrency using busy waiting, which is both inefficient and incorrect. 
+The solution requires proper synchronization mechanisms to ensure thread-safe access to the shared buffer.

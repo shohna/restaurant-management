@@ -1,0 +1,66 @@
+package threadpool;
+
+import java.io.*;
+import java.nio.file.*;
+import java.util.*;
+import java.util.concurrent.*;
+
+public class ThreadpoolWordCount {
+    private Map<String, Integer> wordCount = new ConcurrentHashMap<>();
+    
+    public Map<String, Integer> countWords(List<String> filePaths) {
+        long startTime = System.currentTimeMillis();
+        
+        int processors = Runtime.getRuntime().availableProcessors();
+        ExecutorService executor = Executors.newFixedThreadPool(processors);
+        List<Future<?>> futures = new ArrayList<>();
+        
+        for (String filePath : filePaths) {
+            Future<?> future = executor.submit(() -> processFile(filePath));
+            futures.add(future);
+        }
+        
+        // Wait for all tasks to complete
+        for (Future<?> future : futures) {
+            try {
+                future.get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
+        
+        executor.shutdown();
+        try {
+            executor.awaitTermination(1, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        
+        long endTime = System.currentTimeMillis();
+        System.out.println("ThreadPool (" + processors + " threads) execution time: " + 
+                          (endTime - startTime) + "ms");
+        return wordCount;
+    }
+    
+    private void processFile(String filePath) {
+        try {
+            List<String> lines = Files.readAllLines(Paths.get(filePath));
+            for (String line : lines) {
+                if (line.trim().isEmpty()) continue;
+                
+                String cleanedLine = line.toLowerCase()
+                    .replaceAll("[^a-zA-Z\\s]", "")
+                    .trim();
+                
+                String[] words = cleanedLine.split("\\s+");
+                for (String word : words) {
+                    if (!word.isEmpty()) {
+                        wordCount.merge(word, 1, Integer::sum);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}

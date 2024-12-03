@@ -1,0 +1,331 @@
+//import javax.swing.JFrame;
+//import javax.swing.event.ListSelectionEvent;
+//import javax.swing.event.ListSelectionListener;
+//
+//import java.awt.BorderLayout;
+//import java.awt.Dimension;
+//import java.awt.GridLayout;
+//
+//import javax.swing.*;
+//
+//public class CustomerDisplay extends JFrame {
+//
+//	String[] columnNames = {"Customer Id", "Last Name", "First Name",
+//			"City", "Country", "Email", "Subscription Date" };
+//	
+//	JTable table;
+//
+//	JPanel controlPanel;
+//	JPanel displayPanel;
+//	JButton filterButton;
+//	DisplayList dl = null;
+//	
+//	public CustomerDisplay() {
+//
+//		this.setSize(1024,800);
+//		this.add(createControlPanel(), BorderLayout.NORTH);
+//		this.add(createDisplayPanel(), BorderLayout.CENTER);
+//	}
+//	
+//	public JPanel createControlPanel() {
+//		JPanel newPanel= new JPanel();
+//		newPanel.setLayout(new BorderLayout());
+//		JPanel fieldPanel = new JPanel();
+//		fieldPanel.setLayout(new GridLayout(2,3));
+//		JLabel lastName = new JLabel("Last Name");
+//		JLabel firstName = new JLabel("First Name");
+//		JLabel city = new JLabel("City");
+//		JLabel country = new JLabel("Country");
+//		JLabel dateFrom = new JLabel("Date From");
+//		JLabel dateTo = new JLabel("Date To");
+//		JTextField lastNameField = new JTextField(10);
+//		JTextField firstNameField = new JTextField(10);
+//		JTextField cityField = new JTextField(10);
+//		JTextField countryField = new JTextField(10);
+//		JTextField dateFromField = new JTextField(10);
+//		JTextField dateToField = new JTextField(10);
+//		JPanel p1 = new JPanel();
+//		p1.add(lastName);
+//		p1.add(lastNameField);
+//
+//		JPanel p2 = new JPanel();
+//		p2.add(firstName);
+//		p2.add(firstNameField);
+//		JPanel p3 = new JPanel();
+//		p3.add(city);
+//		p3.add(cityField);
+//		JPanel p4 = new JPanel();
+//		p4.add(country);
+//		p4.add(countryField);
+//		JPanel p5 = new JPanel();
+//		p5.add(dateFrom);
+//		p5.add(dateFromField);
+//		JPanel p6 = new JPanel();
+//		p6.add(dateTo);
+//		p6.add(dateToField);
+//		fieldPanel.add(p1);
+//		fieldPanel.add(p2);
+//		fieldPanel.add(p3);
+//		fieldPanel.add(p4);
+//		fieldPanel.add(p5);
+//		fieldPanel.add(p6);
+//		newPanel.add(fieldPanel, BorderLayout.CENTER);
+//
+//		filterButton = new JButton("Filter");
+//		JPanel buttonPanel = new JPanel();
+//		buttonPanel.add(filterButton);
+//		newPanel.add(buttonPanel, BorderLayout.SOUTH);
+//		return newPanel;
+//		
+//	}
+//	
+//	public JPanel createDisplayPanel() {
+//		
+//		JPanel displayPanel = new JPanel();
+//		
+//		String[][] data = {
+//				{"Aa20BDe68eAb0e9", "Hawkins", "Gerald", "New Alberttown", "Canada",
+//					"uwarner@steele-arias.com", "2021-03-19"
+//				},
+//				{  "CC68FD1D3Bbbf22", "Good", "Riley", "Erikaville", "Canada", 
+//					"alex06@galloway.com", "2020-02-03"
+//				}
+//		};
+//		table = new JTable(data, columnNames);
+//		table.setPreferredScrollableViewportSize(new Dimension(900, 400));
+//		JScrollPane scrollPane = new JScrollPane(table);
+//		table.setFillsViewportHeight(true);
+//		table.getSelectionModel().addListSelectionListener(new ListSelectionListener(){
+//	        public void valueChanged(ListSelectionEvent event) {
+//	            // do some actions here, for example
+//	            // print first column value from selected row
+//	            System.out.println(table.getValueAt(table.getSelectedRow(), 0).toString());
+//	        	if (dl != null) {
+//	        		dl.setVisible(false);
+//	        		dl = null;
+//	        	}
+//	            dl = new DisplayList();
+//	            dl.setVisible(true);
+//	        }
+//	    });
+//		displayPanel.add(scrollPane);
+//		return displayPanel;
+//		
+//	}
+//	
+//	public static void main(String[] args) {
+//		JFrame customerDisplay = new CustomerDisplay();
+//		customerDisplay.setVisible(true);
+//		customerDisplay.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+//	}
+//}
+
+
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.awt.event.*;
+import java.sql.*;
+import java.text.SimpleDateFormat;
+import java.util.Vector;
+
+public class CustomerDisplay extends JFrame {
+    private String[] columnNames = {"Customer Id", "First Name", "Last Name", "Company",
+            "City", "Country", "Phone 1", "Phone 2", "Email", "Subscription Date", "Website"};   
+    
+    private JTable table;
+    private JTextField lastNameField, firstNameField, cityField, 
+                       countryField, dateFromField, dateToField;
+    private JButton filterButton;
+    private DisplayList dl = null;
+    
+    private Connection conn;
+    
+    public CustomerDisplay() {
+        try {
+            conn = DriverManager.getConnection("jdbc:sqlite:corporatedata.db");
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Database connection failed");
+        }
+        
+        this.setSize(1024, 800);
+        this.add(createControlPanel(), BorderLayout.NORTH);
+        this.add(createDisplayPanel(), BorderLayout.CENTER);
+        
+        // Initial load of data
+        loadCustomerData();
+    }
+    
+    private JPanel createControlPanel() {
+        JPanel newPanel = new JPanel();
+        newPanel.setLayout(new BorderLayout());
+        
+        JPanel fieldPanel = new JPanel(new GridLayout(2, 3));
+        
+        // Create input fields
+        lastNameField = new JTextField(10);
+        firstNameField = new JTextField(10);
+        cityField = new JTextField(10);
+        countryField = new JTextField(10);
+        dateFromField = new JTextField(10);
+        dateToField = new JTextField(10);
+        
+        // Add labels and fields to panels
+        fieldPanel.add(createLabelFieldPanel("Last Name", lastNameField));
+        fieldPanel.add(createLabelFieldPanel("First Name", firstNameField));
+        fieldPanel.add(createLabelFieldPanel("City", cityField));
+        fieldPanel.add(createLabelFieldPanel("Country", countryField));
+        fieldPanel.add(createLabelFieldPanel("Date From", dateFromField));
+        fieldPanel.add(createLabelFieldPanel("Date To", dateToField));
+        
+        newPanel.add(fieldPanel, BorderLayout.CENTER);
+        
+        // Filter button
+        filterButton = new JButton("Filter");
+        filterButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                loadFilteredCustomerData();
+            }
+        });
+        
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(filterButton);
+        newPanel.add(buttonPanel, BorderLayout.SOUTH);
+        
+        return newPanel;
+    }
+    
+    private JPanel createLabelFieldPanel(String labelText, JTextField textField) {
+        JPanel panel = new JPanel();
+        panel.add(new JLabel(labelText));
+        panel.add(textField);
+        return panel;
+    }
+    
+    private JPanel createDisplayPanel() {
+        JPanel displayPanel = new JPanel();
+        
+        // Create table with empty model initially
+        table = new JTable(new DefaultTableModel(columnNames, 0));
+        table.setPreferredScrollableViewportSize(new Dimension(900, 400));
+        JScrollPane scrollPane = new JScrollPane(table);
+        table.setFillsViewportHeight(true);
+        
+        // Add selection listener
+        table.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting() && table.getSelectedRow() != -1) {
+                String customerId = table.getValueAt(table.getSelectedRow(), 0).toString();
+                openCustomerDetails(customerId);
+            }
+        });
+        
+        displayPanel.add(scrollPane);
+        return displayPanel;
+    }
+    
+    private void loadCustomerData() {
+        loadCustomerData("SELECT * FROM customers");
+    }
+    
+    private void loadFilteredCustomerData() {
+        StringBuilder query = new StringBuilder("SELECT * FROM customers WHERE 1=1");
+        
+        if (!lastNameField.getText().trim().isEmpty()) {
+            query.append(" AND last_name LIKE '%").append(lastNameField.getText().trim()).append("%'");
+        }
+        if (!firstNameField.getText().trim().isEmpty()) {
+            query.append(" AND first_name LIKE '%").append(firstNameField.getText().trim()).append("%'");
+        }
+        if (!cityField.getText().trim().isEmpty()) {
+            query.append(" AND city LIKE '%").append(cityField.getText().trim()).append("%'");
+        }
+        if (!countryField.getText().trim().isEmpty()) {
+            query.append(" AND country LIKE '%").append(countryField.getText().trim()).append("%'");
+        }
+        
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        if (!dateFromField.getText().trim().isEmpty() && !dateToField.getText().trim().isEmpty()) {
+            query.append(" AND subscription_date BETWEEN '")
+                 .append(dateFromField.getText().trim())
+                 .append("' AND '")
+                 .append(dateToField.getText().trim())
+                 .append("'");
+        }
+        
+        loadCustomerData(query.toString());
+    }
+    
+    private void loadCustomerData(String query) {
+        try {
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(query);
+            
+            // Clear existing data
+            DefaultTableModel model = (DefaultTableModel) table.getModel();
+            model.setRowCount(0);
+            
+            // Populate table
+            while (rs.next()) {
+                Vector<String> row = new Vector<>();
+                row.add(rs.getString("customer_id"));
+                row.add(rs.getString("last_name"));
+                row.add(rs.getString("first_name"));
+                row.add(rs.getString("company"));
+                row.add(rs.getString("city"));
+                row.add(rs.getString("country"));
+                row.add(rs.getString("phone1"));
+                row.add(rs.getString("phone2"));
+                row.add(rs.getString("email"));
+                row.add(rs.getString("subscription_date"));
+                row.add(rs.getString("website"));
+                
+                model.addRow(row);
+            }
+            
+            
+            rs.close();
+            stmt.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error loading customer data");
+        }
+    }
+    
+    private void openCustomerDetails(String customerId) {
+        try {
+            PreparedStatement pstmt = conn.prepareStatement(
+                "SELECT * FROM customers WHERE customer_id = ?"
+            );
+            pstmt.setString(1, customerId);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                dl = new DisplayList(conn, rs);
+                dl.setVisible(true);
+            }
+            
+            rs.close();
+            pstmt.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error retrieving customer details");
+        }
+    }
+    
+    public static void main(String[] args) {
+        // Ensure database driver is loaded
+        try {
+            Class.forName("org.sqlite.JDBC");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            return;
+        }
+        
+        SwingUtilities.invokeLater(() -> {
+            CustomerDisplay customerDisplay = new CustomerDisplay();
+            customerDisplay.setVisible(true);
+            customerDisplay.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        });
+    }
+}

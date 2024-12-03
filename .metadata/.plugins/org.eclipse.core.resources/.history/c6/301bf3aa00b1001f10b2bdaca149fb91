@@ -1,0 +1,117 @@
+import java.io.*;
+import java.sql.*;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
+
+public class IngestCSV {
+    public static void main(String[] args) {
+        String csvFile = "customers-100.csv";
+        String dbUrl = "jdbc:sqlite:corporatedata.db";
+
+        try {
+            Class.forName("org.sqlite.JDBC");
+            Connection conn = DriverManager.getConnection(dbUrl);
+
+            conn.createStatement().execute(
+                "CREATE TABLE IF NOT EXISTS customers (" +
+                "customer_id TEXT PRIMARY KEY, " +
+                "first_name TEXT, " +
+                "last_name TEXT NOT NULL, " +
+                "company TEXT, " +
+                "city TEXT, " +
+                "country TEXT, " +
+                "phone1 TEXT, " +
+                "phone2 TEXT, " +
+                "email TEXT, " +
+                "subscription_date DATE, " +
+                "website TEXT)"
+            );
+
+            PreparedStatement pstmt = conn.prepareStatement(
+                "INSERT OR REPLACE INTO customers " +
+                "(customer_id, first_name, last_name, company, city, country, phone1, phone2, email, subscription_date, website) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            );
+
+            BufferedReader br = new BufferedReader(new FileReader(csvFile));
+            String line;
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            dateFormat.setLenient(false);
+
+            // Skip header
+            br.readLine();
+
+            while ((line = br.readLine()) != null) {
+                List<String> fields = parseCSVLine(line);
+
+                if (fields.size() >= 11) {
+                    pstmt.setString(1, fields.get(1).trim()); // customer_id
+                    pstmt.setString(2, fields.get(2).trim()); // first_name
+                    pstmt.setString(3, fields.get(3).trim()); // last_name
+                    pstmt.setString(4, fields.get(4).trim()); // company
+                    pstmt.setString(5, fields.get(5).trim()); // city
+                    pstmt.setString(6, fields.get(6).trim()); // country
+                    pstmt.setString(7, fields.get(7).trim()); // phone1
+                    pstmt.setString(8, fields.get(8).trim()); // phone2
+                    pstmt.setString(9, fields.get(9).trim()); // email
+
+                    String dateField = fields.get(10).trim();
+                    if (!dateField.isEmpty()) {
+                        try {
+                            java.util.Date parsedDate = dateFormat.parse(dateField); // Parse date string
+                            pstmt.setDate(10, new java.sql.Date(parsedDate.getTime())); // Set the parsed date
+                        } catch (Exception e) {
+                            System.err.println("Invalid date format: " + dateField); // Debugging output
+                            pstmt.setNull(10, java.sql.Types.DATE);
+                        }
+                    } else {
+                        pstmt.setNull(10, java.sql.Types.DATE);
+                    }
+
+
+                    pstmt.setString(11, fields.get(11).trim()); // website
+
+                    pstmt.executeUpdate();
+                }
+            }
+
+            br.close();
+            pstmt.close();
+            conn.close();
+
+            System.out.println("CSV data successfully imported to database.");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Custom CSV parsing method to handle quoted fields
+    private static List<String> parseCSVLine(String line) {
+        List<String> fields = new ArrayList<>();
+        boolean inQuotes = false;
+        StringBuilder currentField = new StringBuilder();
+
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+
+            if (c == '"') {
+                // Toggle quote status
+                inQuotes = !inQuotes;
+            } else if (c == ',' && !inQuotes) {
+                // Comma outside quotes marks field boundary
+                fields.add(currentField.toString());
+                currentField = new StringBuilder();
+            } else {
+                // Add character to current field
+                currentField.append(c);
+            }
+        }
+
+        // Add the last field
+        fields.add(currentField.toString());
+
+        return fields;
+    }
+}

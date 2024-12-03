@@ -1,0 +1,98 @@
+
+//public class IngestCSV {
+//	// this code should read in the CSV file and put it in
+//	// a sqlite db table
+//}
+
+import java.io.*;
+import java.sql.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+public class IngestCSV {
+    public static void main(String[] args) {
+        String csvFile = "customers-100.csv";
+        String dbUrl = "jdbc:sqlite:corporatedata.db";
+        
+        try {
+            // Load SQLite JDBC driver
+            Class.forName("org.sqlite.JDBC");
+            
+            // Create connection
+            Connection conn = DriverManager.getConnection(dbUrl);
+            
+            // Create table if not exists
+            conn.createStatement().execute(
+                "CREATE TABLE IF NOT EXISTS customers (" +
+                "customer_id TEXT PRIMARY KEY, " +
+                "first_name TEXT, " +
+                "last_name TEXT NOT NULL, " +
+                "company TEXT, " +
+                "city TEXT, " +
+                "country TEXT, " +
+                "phone1 TEXT, " +
+                "phone2 TEXT, " +    
+                "email TEXT, " +
+                "subscription_date DATE, " +
+                "website TEXT)"
+            );
+            
+            // Prepare insert statement
+            PreparedStatement pstmt = conn.prepareStatement(
+                "INSERT OR REPLACE INTO customers " +
+                "(customer_id, first_name, last_name, company, city, country, phone1, phone2, email, subscription_date, website) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            );
+            
+            // Read CSV
+            BufferedReader br = new BufferedReader(new FileReader(csvFile));
+            String line;
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            
+            // Skip header if present
+            br.readLine();
+            
+            while ((line = br.readLine()) != null) {
+                String[] fields = line.split(",");
+                
+                // Ensure we have enough fields
+                if (fields.length >= 11) {
+                    pstmt.setString(1, fields[1].trim()); 
+                    pstmt.setString(2, fields[2].trim());  
+                    pstmt.setString(3, fields[3].trim());  
+                    pstmt.setString(4, fields[4].trim());  
+                    pstmt.setString(5, fields[5].trim());  
+                    pstmt.setString(6, fields[6].trim());  
+                    pstmt.setString(7, fields[7].trim());  
+                    pstmt.setString(8, fields[8].trim());  
+                    pstmt.setString(9, fields[9].trim());
+                    pstmt.setString(10, fields[10].trim());
+                    pstmt.setString(11, fields[11].trim());
+                    
+                    // Parse date
+                    try {
+                        Date date = dateFormat.parse(fields[9].trim());
+                        pstmt.setDate(10, new java.sql.Date(date.getTime()));
+                    } catch (Exception e) {
+                        pstmt.setNull(10, java.sql.Types.DATE);
+                    }
+                    
+                    pstmt.setString(11, fields[10].trim());  // website
+                    
+                    // Execute insert
+                    pstmt.executeUpdate();
+                }
+            }
+            
+            // Close resources
+            br.close();
+            pstmt.close();
+            conn.close();
+            
+            System.out.println("CSV data successfully imported to database.");
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}

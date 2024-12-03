@@ -1,0 +1,27 @@
+package producer_consumer;
+
+public class Producer implements Runnable {
+    private final SharedBuffer buffer;
+    private static int numProducers = 0;
+    private int id;
+
+    public Producer(SharedBuffer buffer) {
+        this.buffer = buffer;
+        this.id = numProducers++;
+    }
+
+    @Override
+    public void run() {
+        while (true) {
+        	int value = (int)(Math.random()*Integer.MAX_VALUE);
+        	System.out.println("producer " + this.id + " value = " + value);
+            buffer.produce(value);
+            
+            try {
+                Thread.sleep((int)(Math.random()*10)); // Simulate time taken to produce
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+}

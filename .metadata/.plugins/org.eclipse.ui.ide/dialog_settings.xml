@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="SmartImportWizard">
+		<item key="SmartImportRootWizardPage.STORE_HIDE_ALREADY_OPEN" value="false"/>
+		<item key="SmartImportRootWizardPage.STORE_CLOSE_IMPORTED" value="false"/>
+		<item key="SmartImportRootWizardPage.STORE_NESTED_PROJECTS" value="true"/>
+		<item key="SmartImportRootWizardPage.STORE_CONFIGURE_NATURES" value="true"/>
+		<list key="org.eclipse.ui.internal.wizards.datatransfer.SmartImportRootWizardPage.knownSources">
+			<item value="C:\Users\Devyanii\Downloads\Lecture11Code (1)\Lecture11"/>
+			<item value="C:\Users\Devyanii\Downloads\Lecture11Code\Lecture11"/>
+			<item value="C:\Users\Devyanii\Desktop\JAVA\A9\Assignment9\Assignment9"/>
+			<item value="C:\Users\Devyanii\Desktop\JAVA\A8\Assignment8\Assignment8"/>
+			<item value="C:\Users\Devyanii\Desktop\JAVA\A7\Assignment7\Assignment7"/>
+			<item value="C:\Users\Devyanii\Desktop\JAVA\Lecture07PostLectureCode - Copy (1)\Lecture07PostLectureCode"/>
+			<item value="C:\Users\Devyanii\Desktop\JAVA\Lecture07Code\Lecture07"/>
+			<item value="C:\Users\Devyanii\Downloads\Lecture07PostLectureCode - Copy (1)\Lecture07PostLectureCode"/>
+			<item value="C:\Users\Devyanii\Desktop\JAVA\A6\Assignment6\Assignment6"/>
+			<item value="C:\Users\Devyanii\Downloads\Midterm_sk11239"/>
+			<item value="C:\Users\Devyanii\Downloads\rkv8708-midterm\src"/>
+			<item value="C:\Users\Devyanii\Downloads"/>
+			<item value="C:\Users\Devyanii\Downloads\Midterm_rd3377 (1)"/>
+			<item value="C:\Users\Devyanii\Downloads\Midterm_rd3377"/>
+			<item value="C:\Users\Devyanii\Desktop\JAVA\Midterm\Midterm\Midterm"/>
+			<item value="C:\Users\Devyanii\Downloads\Assignment5CodeAnswers"/>
+			<item value="C:\Users\Devyanii\Desktop\JAVA\A5\Assignment5Code\Assignment5"/>
+			<item value="C:\Users\Devyanii\Desktop\JAVA\A4\Assignment_4_rd3377\rAssignment4"/>
+			<item value="C:\Users\Devyanii\Desktop\JAVA\A4\Assignment_4_rd3377"/>
+			<item value="C:\Users\Devyanii\Desktop\JAVA\A4\Assignment4Code\Assignment4"/>
+			<item value="C:\Users\Devyanii\Desktop\JAVA\A3\hac9624_Assignment_3\hac9624_Assignment_3"/>
+			<item value="C:\Users\Devyanii\Downloads\hac9624_Assignment_3\hac9624_Assignment_3"/>
+			<item value="C:\Users\Devyanii\Desktop\JAVA\A3\Assignment3\Assignment3"/>
+			<item value="C:\Users\Devyanii\Desktop\JAVA\A2\Assignment2Code\Assignment2"/>
+			<item value="C:\Users\Devyanii\Desktop\JAVA\A1\Assignment1Code\Assignment1"/>
+		</list>
+	</section>
+</section>
