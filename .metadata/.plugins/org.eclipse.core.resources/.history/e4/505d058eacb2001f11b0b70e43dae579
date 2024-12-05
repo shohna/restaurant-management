@@ -1,0 +1,12 @@
+/**
+ * 
+ */
+/**
+ * 
+ */
+module Restaurant_Management_System {
+	    requires javafx.controls;
+	    requires javafx.fxml;
+	    
+	    exports MainApplication.java;
+}

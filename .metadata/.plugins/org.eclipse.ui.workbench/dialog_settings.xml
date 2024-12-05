@@ -17,6 +17,7 @@
 		<item key="WizardZipFileResourceExportPage1.STORE_CREATE_STRUCTURE_ID" value="true"/>
 		<item key="WizardZipFileResourceExportPage1.STORE_COMPRESS_CONTENTS_ID" value="true"/>
 		<list key="WizardZipFileResourceExportPage1.STORE_DESTINATION_NAMES_ID">
+			<item value="C:\Users\Devyanii\Desktop\JAVA\A9\db4922_Assignment9.zip"/>
 			<item value="C:\Users\Devyanii\Desktop\JAVA\A8\db4922_Assignment8.zip"/>
 			<item value="C:\Users\Devyanii\Desktop\JAVA\A8\Assignment_8.zip"/>
 			<item value="C:\Users\Devyanii\Desktop\JAVA\A7\db4922-Assignment7.zip"/>

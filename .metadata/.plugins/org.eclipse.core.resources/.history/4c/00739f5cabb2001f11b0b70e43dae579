@@ -1,0 +1,6 @@
+module your.project.name {
+    requires javafx.controls;
+    requires javafx.fxml;
+    
+    exports your.main.package;
+}

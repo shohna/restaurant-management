@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="StaffController" spacing="10" alignment="CENTER">
+    <ListView fx:id="orderQueue" prefHeight="200" prefWidth="200" />
+    <Button fx:id="completeOrderButton" text="Complete Order" onAction="#handleCompleteOrder" />
+</VBox>
