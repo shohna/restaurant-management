@@ -1,0 +1,22 @@
+.root {
+    -fx-background-color: #f5f5f5;
+    -fx-font-family: "Arial";
+}
+
+.text-field {
+    -fx-padding: 10px;
+    -fx-font-size: 14px;
+    -fx-border-color: #ccc;
+}
+
+.button {
+    -fx-background-color: #4CAF50;
+    -fx-text-fill: white;
+    -fx-padding: 10px 20px;
+    -fx-font-size: 16px;
+    -fx-border-radius: 5px;
+}
+
+.list-view {
+    -fx-border-color: #ccc;
+}
