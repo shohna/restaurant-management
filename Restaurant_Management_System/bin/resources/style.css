@@ -226,3 +226,364 @@
     -fx-background-color: #262626;
     -fx-padding: 40;
 }
+/* Staff Interface Specific Styles */
+.staff-root {
+    -fx-background-color: #f5f5f5;
+}
+
+.nav-bar {
+    -fx-background-color: #2c3e50;
+    -fx-padding: 10 20;
+    -fx-spacing: 10;
+}
+
+.nav-title {
+    -fx-text-fill: white;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+.logout-button {
+    -fx-background-color: #e74c3c;
+    -fx-text-fill: white;
+    -fx-cursor: hand;
+}
+
+.logout-button:hover {
+    -fx-background-color: derive(#e74c3c, -10%);
+}
+
+.sidebar {
+    -fx-background-color: white;
+    -fx-padding: 10;
+    -fx-spacing: 10;
+}
+
+.section-header {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-padding: 5 0;
+}
+
+.action-bar {
+    -fx-padding: 10;
+    -fx-spacing: 10;
+}
+
+.action-bar .button {
+    -fx-background-color: #3498db;
+    -fx-text-fill: white;
+    -fx-cursor: hand;
+}
+
+.action-bar .button:hover {
+    -fx-background-color: derive(#3498db, -10%);
+}
+
+.tables-grid {
+    -fx-padding: 20;
+    -fx-hgap: 10;
+    -fx-vgap: 10;
+}
+
+.table-button {
+    -fx-background-color: #2ecc71;
+    -fx-text-fill: white;
+    -fx-min-width: 100;
+    -fx-min-height: 100;
+    -fx-cursor: hand;
+}
+
+.table-button:hover {
+    -fx-background-color: derive(#2ecc71, -10%);
+}
+
+.table-button.occupied {
+    -fx-background-color: #e74c3c;
+}
+
+.kitchen-grid {
+    -fx-padding: 20;
+    -fx-hgap: 10;
+    -fx-vgap: 10;
+}
+
+.status-bar {
+    -fx-background-color: #34495e;
+    -fx-padding: 5 20;
+}
+
+.status-bar .label {
+    -fx-text-fill: white;
+}
+
+/* TableView Styles */
+.table-view {
+    -fx-background-color: transparent;
+}
+
+.table-view .column-header {
+    -fx-background-color: #34495e;
+    -fx-text-fill: white;
+}
+
+.table-view .table-row-cell {
+    -fx-background-color: white;
+}
+
+.table-view .table-row-cell:odd {
+    -fx-background-color: #f9f9f9;
+}
+
+.table-view .table-row-cell:selected {
+    -fx-background-color: derive(#3498db, 90%);
+}
+
+.time-label {
+    -fx-text-fill: white;
+    -fx-font-size: 18px;
+    -fx-padding: 0 20;
+}
+
+/* Tab Styling */
+.tab-pane {
+    -fx-background-color: transparent;
+}
+
+.tab-pane .tab-header-area {
+    -fx-padding: 5;
+}
+
+.tab-pane .tab {
+    -fx-background-color: #34495e;
+    -fx-text-fill: white;
+}
+
+.tab-pane .tab:selected {
+    -fx-background-color: #2c3e50;
+}
+
+.tab-pane .tab-label {
+    -fx-text-fill: white;
+}
+
+/* Split Pane Styling */
+.split-pane {
+    -fx-background-color: transparent;
+}
+
+.split-pane:horizontal > .split-pane-divider {
+    -fx-background-color: #ddd;
+    -fx-padding: 0 1;
+}
+
+/* Order Queue Styling */
+.list-view {
+    -fx-background-color: white;
+    -fx-border-color: #ddd;
+    -fx-border-radius: 4;
+}
+
+.list-view .list-cell {
+    -fx-padding: 10;
+    -fx-background-color: white;
+}
+
+.list-view .list-cell:odd {
+    -fx-background-color: #f8f9fa;
+}
+
+.list-view .list-cell:selected {
+    -fx-background-color: #3498db;
+    -fx-text-fill: white;
+}
+
+.table-button-selected {
+    -fx-border-color: #3498db;
+    -fx-border-width: 3px;
+    -fx-border-style: solid;
+}
+
+/* Chart Styling */
+.chart {
+    -fx-padding: 10;
+    -fx-background-color: white;
+}
+
+.chart-title {
+    -fx-text-fill: #2c3e50;
+    -fx-font-size: 14px;
+}
+
+.axis-label {
+    -fx-text-fill: #2c3e50;
+}
+
+.chart-legend {
+    -fx-background-color: transparent;
+}
+
+.default-color0.chart-series-line { 
+    -fx-stroke: #3498db; 
+}
+
+.default-color1.chart-series-line { 
+    -fx-stroke: #2ecc71; 
+}
+
+.chart-bar {
+    -fx-bar-fill: #3498db;
+}
+
+.chart-pie-label {
+    -fx-fill: #2c3e50;
+}
+
+/* Kitchen Orders Styling */
+.kitchen-orders {
+    -fx-background-color: white;
+    -fx-padding: 10;
+    -fx-spacing: 10;
+}
+
+/* Status Indicators */
+.status-indicator {
+    -fx-font-size: 12px;
+    -fx-padding: 5 10;
+    -fx-background-radius: 3;
+}
+
+.status-preparing {
+    -fx-background-color: #f1c40f;
+    -fx-text-fill: white;
+}
+
+.status-ready {
+    -fx-background-color: #2ecc71;
+    -fx-text-fill: white;
+}
+
+.status-served {
+    -fx-background-color: #95a5a6;
+    -fx-text-fill: white;
+}
+
+/* Table Button States */
+.table-button.available {
+    -fx-background-color: #2ecc71;
+}
+
+.table-button.occupied {
+    -fx-background-color: #e74c3c;
+}
+
+.table-button.reserved {
+    -fx-background-color: #f1c40f;
+}
+
+/* Report Controls */
+.report-controls {
+    -fx-spacing: 10;
+    -fx-padding: 10;
+    -fx-background-color: white;
+    -fx-border-color: #ddd;
+    -fx-border-radius: 4;
+}
+
+.date-picker {
+    -fx-min-width: 120;
+}
+
+/* Enhanced Button Styles */
+.action-button {
+    -fx-background-color: #3498db;
+    -fx-text-fill: white;
+    -fx-padding: 8 15;
+    -fx-cursor: hand;
+    -fx-background-radius: 3;
+}
+
+.action-button:hover {
+    -fx-background-color: derive(#3498db, -10%);
+}
+
+.danger-button {
+    -fx-background-color: #e74c3c;
+    -fx-text-fill: white;
+}
+
+.danger-button:hover {
+    -fx-background-color: derive(#e74c3c, -10%);
+}
+
+.success-button {
+    -fx-background-color: #2ecc71;
+    -fx-text-fill: white;
+}
+
+.success-button:hover {
+    -fx-background-color: derive(#2ecc71, -10%);
+}
+
+/* Enhanced TableView Styles */
+.table-view .column-header-background {
+    -fx-background-color: #34495e;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.table-row-cell:hover {
+    -fx-background-color: derive(#3498db, 90%);
+}
+
+/* Enhance ComboBox Styling */
+.combo-box {
+    -fx-background-color: white;
+    -fx-border-color: #ddd;
+    -fx-border-radius: 3;
+}
+
+.combo-box:focused {
+    -fx-border-color: #3498db;
+}
+
+.combo-box .list-cell {
+    -fx-padding: 5 10;
+}
+
+/* Dashboard Cards */
+.dashboard-card {
+    -fx-background-color: white;
+    -fx-padding: 15;
+    -fx-background-radius: 5;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 3);
+}
+
+.card-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50;
+}
+
+.table-button-available {
+    -fx-background-color: #2ecc71;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.table-button-occupied {
+    -fx-background-color: #e74c3c;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.tables-grid {
+    -fx-background-color: white;
+    -fx-padding: 20;
+    -fx-alignment: center;
+}

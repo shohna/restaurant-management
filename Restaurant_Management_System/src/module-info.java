@@ -5,6 +5,5 @@ module Restaurant_Management_System {
     requires java.sql;
 
     opens application to javafx.fxml;
-    opens resources to javafx.fxml;
     exports application;
 }
