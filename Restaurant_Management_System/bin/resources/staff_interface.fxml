@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.*?>
+
+<VBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" 
+      fx:controller="application.StaffController" 
+      styleClass="staff-root">
+
+    <!-- Top Navigation Bar -->
+    <HBox styleClass="nav-bar" spacing="10">
+        <padding>
+            <Insets top="10" right="20" bottom="10" left="20"/>
+        </padding>
+        <Label text="Restaurant Management Dashboard" styleClass="nav-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label fx:id="timeLabel" styleClass="time-label"/>
+        <Button text="Logout" onAction="#handleLogout" styleClass="logout-button"/>
+    </HBox>
+
+    <!-- Main Content -->
+    <TabPane VBox.vgrow="ALWAYS">
+        <!-- Tables Tab -->
+        <Tab text="Tables" closable="false">
+            <VBox spacing="10">
+                <padding>
+                    <Insets top="20" right="20" bottom="20" left="20"/>
+                </padding>
+                <HBox spacing="20" alignment="CENTER_LEFT">
+                    <Button text="Assign Table" onAction="#handleAssignTable"/>
+                    <Button text="Clear Table" onAction="#handleClearTable"/>
+                </HBox>
+                <GridPane fx:id="tablesGrid" styleClass="tables-grid" 
+                          hgap="10" vgap="10" VBox.vgrow="ALWAYS"/>
+            </VBox>
+        </Tab>
+
+        <!-- Orders Tab -->
+        <Tab text="Orders" closable="false">
+            <SplitPane dividerPositions="0.6">
+                <!-- Order Queue -->
+                <VBox spacing="10">
+                    <padding>
+                        <Insets top="10" right="10" bottom="10" left="10"/>
+                    </padding>
+                    <Label text="Order Queue" styleClass="section-header"/>
+                    <ListView fx:id="orderQueue" VBox.vgrow="ALWAYS"/>
+                    <HBox spacing="10">
+                        <Button text="Complete Order" onAction="#handleCompleteOrder"/>
+                        <Button text="Cancel Order" onAction="#handleCancelOrder"/>
+                    </HBox>
+                </VBox>
+                
+                <!-- Kitchen Orders -->
+                <VBox spacing="10">
+                    <padding>
+                        <Insets top="10" right="10" bottom="10" left="10"/>
+                    </padding>
+                    <Label text="Kitchen Orders" styleClass="section-header"/>
+                    <ListView fx:id="kitchenOrdersList" VBox.vgrow="ALWAYS"/>
+                    <HBox spacing="10">
+                        <ComboBox fx:id="orderStatusCombo" promptText="Update Status"/>
+                        <Button text="Update Status" onAction="#handleUpdateKitchenOrder"/>
+                    </HBox>
+                </VBox>
+            </SplitPane>
+        </Tab>
+
+        <!-- Reservations Tab -->
+        <Tab text="Reservations" closable="false">
+            <VBox spacing="10">
+                <padding>
+                    <Insets top="20" right="20" bottom="20" left="20"/>
+                </padding>
+                <TableView fx:id="reservationsTable" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="timeColumn" text="Time" prefWidth="100"/>
+                        <TableColumn fx:id="nameColumn" text="Name" prefWidth="150"/>
+                        <TableColumn fx:id="guestsColumn" text="Guests" prefWidth="100"/>
+                        <TableColumn fx:id="statusColumn" text="Status" prefWidth="100"/>
+                    </columns>
+                </TableView>
+            </VBox>
+        </Tab>
+
+        <!-- Reports Tab -->
+        <Tab text="Reports" closable="false">
+            <VBox spacing="20">
+                <padding>
+                    <Insets top="20" right="20" bottom="20" left="20"/>
+                </padding>
+                
+                <!-- Report Controls -->
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <ComboBox fx:id="reportTypeCombo" promptText="Select Report Type"/>
+                    <DatePicker fx:id="reportStartDate" promptText="Start Date"/>
+                    <DatePicker fx:id="reportEndDate" promptText="End Date"/>
+                    <Button text="Generate Report" onAction="#handleGenerateReport"/>
+                </HBox>
+
+                <!-- Charts -->
+                <TabPane>
+                    <Tab text="Sales">
+                        <LineChart fx:id="salesChart">
+                            <xAxis>
+                                <CategoryAxis label="Day"/>
+                            </xAxis>
+                            <yAxis>
+                                <NumberAxis label="Sales ($)"/>
+                            </yAxis>
+                        </LineChart>
+                    </Tab>
+                    <Tab text="Popular Items">
+                        <PieChart fx:id="itemsChart"/>
+                    </Tab>
+                    <Tab text="Table Usage">
+                        <BarChart fx:id="tableUsageChart">
+                            <xAxis>
+                                <CategoryAxis label="Table"/>
+                            </xAxis>
+                            <yAxis>
+                                <NumberAxis label="Hours"/>
+                            </yAxis>
+                        </BarChart>
+                    </Tab>
+                </TabPane>
+            </VBox>
+        </Tab>
+    </TabPane>
+
+    <!-- Status Bar -->
+    <HBox styleClass="status-bar">
+        <padding>
+            <Insets top="5" right="5" bottom="5" left="5"/>
+        </padding>
+        <Label fx:id="statusLabel" text="Ready"/>
+    </HBox>
+
+</VBox>
