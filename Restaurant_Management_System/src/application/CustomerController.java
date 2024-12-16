@@ -5,189 +5,271 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import application.model.entity.MenuItem;
+import java.sql.*;
 import java.time.LocalDate;
-import javafx.collections.FXCollections;
+import java.time.LocalDateTime;
+import java.util.*;
 
 public class CustomerController {
 
-	@FXML
-	public void showMenu() {
-	    Dialog<String> dialog = new Dialog<>();
-	    dialog.setTitle("Our Menu");
-	    
-	    // Create main content VBox
-	    VBox content = new VBox(10);
-	    content.getStyleClass().add("menu-content");
-	    
-	    // Add categories
-	    content.getChildren().addAll(
-	        createMenuCategory("Appetizers", new String[][]{
-	            {"Classic Bruschetta", "Fresh tomatoes, garlic, basil on toasted bread", "$12"},
-	            {"Crispy Calamari", "Served with marinara sauce and lemon", "$16"},
-	            {"Garden Salad", "Mixed greens, cherry tomatoes, cucumber", "$10"}
-	        }),
-	        new Separator(),
-	        createMenuCategory("Main Course", new String[][]{
-	            {"Grilled Salmon", "Fresh Atlantic salmon with seasonal vegetables", "$28"},
-	            {"Beef Tenderloin", "8oz with red wine reduction sauce", "$34"},
-	            {"Mushroom Risotto", "Arborio rice, wild mushrooms, parmesan", "$24"}
-	        }),
-	        new Separator(),
-	        createMenuCategory("Desserts", new String[][]{
-	            {"Tiramisu", "Classic Italian coffee-flavored dessert", "$10"},
-	            {"Chocolate Lava Cake", "Warm chocolate cake with vanilla ice cream", "$12"},
-	            {"Crème Brûlée", "Classic French vanilla custard", "$9"}
-	        })
-	    );
+    private final List<MenuItem> selectedItems = new ArrayList<>();
 
-	    ScrollPane scrollPane = new ScrollPane(content);
-	    scrollPane.setFitToWidth(true);
-	    scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-	    scrollPane.getStyleClass().add("menu-scroll-pane");
+    @FXML
+    public void showMenu() {
+        Map<String, List<MenuItem>> menuItems = MenuItem.fetchMenuItems();
 
-	    DialogPane dialogPane = dialog.getDialogPane();
-	    dialogPane.setContent(scrollPane);
-	    dialogPane.getStyleClass().add("menu-dialog");
-	    dialogPane.getButtonTypes().add(ButtonType.CLOSE);
+        Dialog<String> dialog = new Dialog<>();
+        dialog.setTitle("Our Menu");
 
-	    dialog.showAndWait();
-	}
+        VBox content = new VBox(10);
+        content.getStyleClass().add("menu-content");
 
-	private VBox createMenuCategory(String categoryName, String[][] items) {
-	    VBox category = new VBox(5);
-	    
-	    // Category header
-	    Label header = new Label(categoryName);
-	    header.getStyleClass().add("category-header");
-	    category.getChildren().add(header);
-	    
-	    // Menu items
-	    for (String[] item : items) {
-	        VBox itemBox = new VBox(2);
-	        itemBox.getStyleClass().add("menu-item");
-	        
-	        HBox namePrice = new HBox();
-	        namePrice.setAlignment(Pos.CENTER_LEFT);
-	        
-	        Label nameLabel = new Label(item[0]);
-	        nameLabel.getStyleClass().add("item-name");
-	        Region spacer = new Region();
-	        HBox.setHgrow(spacer, Priority.ALWAYS);
-	        Label priceLabel = new Label(item[2]);
-	        priceLabel.getStyleClass().add("item-price");
-	        
-	        namePrice.getChildren().addAll(nameLabel, spacer, priceLabel);
-	        
-	        Label descLabel = new Label(item[1]);
-	        descLabel.getStyleClass().add("item-description");
-	        
-	        itemBox.getChildren().addAll(namePrice, descLabel);
-	        category.getChildren().add(itemBox);
-	    }
-	    
-	    return category;
-	}
-    
-    
+        // Add categories dynamically
+        for (Map.Entry<String, List<MenuItem>> entry : menuItems.entrySet()) {
+            content.getChildren().addAll(
+                createMenuCategory(entry.getKey(), entry.getValue()),
+                new Separator()
+            );
+        }
+
+        ScrollPane scrollPane = new ScrollPane(content);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+
+        DialogPane dialogPane = dialog.getDialogPane();
+        dialogPane.setContent(scrollPane);
+
+        ButtonType addToOrderButton = new ButtonType("Add to Order", ButtonBar.ButtonData.OK_DONE);
+        dialogPane.getButtonTypes().addAll(addToOrderButton, ButtonType.CLOSE);
+
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == addToOrderButton) {
+                handleAddToOrder();
+            }
+            return null;
+        });
+
+        dialog.showAndWait();
+    }
+
+    private VBox createMenuCategory(String categoryName, List<MenuItem> items) {
+        VBox category = new VBox(5);
+
+        // Category header
+        Label header = new Label(categoryName);
+        header.getStyleClass().add("category-header");
+        category.getChildren().add(header);
+
+        for (MenuItem item : items) {
+            HBox itemBox = new HBox(10);
+            itemBox.setAlignment(Pos.CENTER_LEFT);
+
+            // Checkbox for item selection
+            CheckBox checkBox = new CheckBox(item.getName());
+            checkBox.setUserData(item);
+
+            // Quantity Spinner
+            Spinner<Integer> quantitySpinner = new Spinner<>(1, 10, 1);
+            quantitySpinner.setPrefWidth(60);
+            quantitySpinner.setDisable(true); // Disabled until item is selected
+
+            // Enable spinner when item is selected
+            checkBox.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
+                quantitySpinner.setDisable(!isSelected);
+                if (isSelected) {
+                    item.setQuantity(quantitySpinner.getValue());
+                    selectedItems.add(item);
+                } else {
+                    selectedItems.remove(item);
+                }
+            });
+
+            quantitySpinner.valueProperty().addListener((obs, oldValue, newValue) -> {
+                if (checkBox.isSelected()) {
+                    item.setQuantity(newValue); // Update quantity for the selected item
+                }
+            });
+
+            itemBox.getChildren().addAll(checkBox, new Label("$" + item.getPrice()), quantitySpinner);
+            category.getChildren().add(itemBox);
+        }
+        return category;
+    }
+
+
     @FXML
     public void showReservationDialog() {
         Dialog<String> dialog = new Dialog<>();
         dialog.setTitle("Make a Reservation");
-        
+
         DialogPane dialogPane = dialog.getDialogPane();
         dialogPane.getStyleClass().add("custom-dialog");
-        
-        // Create main content
-        VBox content = new VBox(25);
-        content.setPadding(new Insets(30));
-        content.getStyleClass().add("reservation-content");
-        
-        // Header
-        Label header = new Label("Reserve Your Table");
-        header.getStyleClass().add("dialog-header");
-        
-        // Form grid
-        GridPane grid = new GridPane();
-        grid.setHgap(20);
-        grid.setVgap(15);
-        grid.getStyleClass().add("reservation-grid");
-        
-        // Add form controls with labels
-        addFormField(grid, "Name", createStyledTextField("Enter your name"), 0);
-        addFormField(grid, "Email", createStyledTextField("Enter your email"), 1);
-        addFormField(grid, "Phone", createStyledTextField("Enter your phone number"), 2);
-        
-        // Date picker with custom styling
-        DatePicker datePicker = new DatePicker(LocalDate.now());
-        datePicker.getStyleClass().add("custom-date-picker");
-        addFormField(grid, "Date", datePicker, 3);
-        
-        // Time combo box
-        ComboBox<String> timeComboBox = new ComboBox<>(FXCollections.observableArrayList(
-            "5:00 PM", "5:30 PM", "6:00 PM", "6:30 PM", "7:00 PM", "7:30 PM", "8:00 PM", "8:30 PM", "9:00 PM"
-        ));
-        timeComboBox.setPromptText("Select time");
-        timeComboBox.getStyleClass().add("custom-combo-box");
-        addFormField(grid, "Time", timeComboBox, 4);
-        
-        // Guest count spinner
+
+        VBox content = new VBox(10);
+        content.setPadding(new Insets(10));
+
+        // Add Reservation Form
+        Label nameLabel = new Label("Name:");
+        TextField nameField = new TextField();
+
+        Label dateLabel = new Label("Date:");
+        DatePicker datePicker = new DatePicker();
+
+        Label timeLabel = new Label("Time:");
+        ComboBox<String> timeComboBox = new ComboBox<>();
+        timeComboBox.getItems().addAll("5:00 PM", "6:00 PM", "7:00 PM", "8:00 PM");
+
+        Label guestsLabel = new Label("Number of Guests:");
         Spinner<Integer> guestSpinner = new Spinner<>(1, 10, 2);
-        guestSpinner.getStyleClass().add("custom-spinner");
-        addFormField(grid, "Guests", guestSpinner, 5);
-        
-        // Special requests
-        TextArea specialRequests = new TextArea();
-        specialRequests.setPromptText("Any special requests or dietary requirements?");
-        specialRequests.setPrefRowCount(3);
-        specialRequests.getStyleClass().add("custom-textarea");
-        addFormField(grid, "Special Requests", specialRequests, 6);
-        
-        content.getChildren().addAll(header, grid);
+
+        content.getChildren().addAll(
+            nameLabel, nameField,
+            dateLabel, datePicker,
+            timeLabel, timeComboBox,
+            guestsLabel, guestSpinner
+        );
+
         dialogPane.setContent(content);
-        
-        // Add buttons
-        ButtonType reserveButtonType = new ButtonType("Reserve", ButtonBar.ButtonData.OK_DONE);
-        dialogPane.getButtonTypes().addAll(reserveButtonType, ButtonType.CANCEL);
-        
-        // Style buttons
-        Button reserveButton = (Button) dialogPane.lookupButton(reserveButtonType);
-        reserveButton.getStyleClass().add("dialog-button-primary");
-        
-        Button cancelButton = (Button) dialogPane.lookupButton(ButtonType.CANCEL);
-        cancelButton.getStyleClass().add("dialog-button-secondary");
-        
+
+        ButtonType reserveButton = new ButtonType("Reserve", ButtonBar.ButtonData.OK_DONE);
+        dialogPane.getButtonTypes().addAll(reserveButton, ButtonType.CANCEL);
+
+        dialog.setResultConverter(button -> {
+            if (button == reserveButton) {
+                // Collect and process reservation data
+                String name = nameField.getText();
+                LocalDate date = datePicker.getValue();
+                String time = timeComboBox.getValue();
+                int guests = guestSpinner.getValue();
+                System.out.printf("Reservation: %s, %s, %s, %d guests%n", name, date, time, guests);
+                return "Reservation Successful";
+            }
+            return null;
+        });
+
         dialog.showAndWait();
     }
 
-    private void addFormField(GridPane grid, String labelText, Control field, int row) {
-        Label label = new Label(labelText);
-        label.getStyleClass().add("field-label");
-        grid.add(label, 0, row);
-        grid.add(field, 1, row);
-        GridPane.setFillWidth(field, true);
+    private void handleAddToOrder() {
+        if (selectedItems.isEmpty()) {
+            showAlert("No Items Selected", "Please select at least one item to add to your order.");
+            return;
+        }
+
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            conn.setAutoCommit(false); // Begin transaction
+
+            // 1. Fetch an available table randomly
+            int tableId = fetchRandomAvailableTable(conn);
+            if (tableId == -1) {
+                showAlert("Error", "No tables are currently available.");
+                return;
+            }
+
+            // 2. Insert into orders table
+            String insertOrder = "INSERT INTO orders (table_id, total_amount, order_time, status) VALUES (?, ?, ?, ?)";
+            int orderId;
+            try (PreparedStatement orderStmt = conn.prepareStatement(insertOrder, Statement.RETURN_GENERATED_KEYS)) {
+                orderStmt.setInt(1, tableId);
+                orderStmt.setDouble(2, calculateTotal());
+                orderStmt.setString(3, LocalDateTime.now().toString());
+                orderStmt.setString(4, "NEW");
+                orderStmt.executeUpdate();
+
+                ResultSet generatedKeys = orderStmt.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    orderId = generatedKeys.getInt(1);
+                } else {
+                    throw new SQLException("Failed to retrieve order ID.");
+                }
+            }
+
+            // 3. Insert into order_items table
+            String insertOrderItem = "INSERT INTO order_items (order_id, menu_item_id, quantity) VALUES (?, ?, ?)";
+            try (PreparedStatement itemStmt = conn.prepareStatement(insertOrderItem)) {
+                for (MenuItem item : selectedItems) {
+                    itemStmt.setInt(1, orderId);
+                    itemStmt.setInt(2, item.getId());
+                    itemStmt.setInt(3, item.getQuantity());
+                    itemStmt.addBatch();
+                }
+                itemStmt.executeBatch();
+            }
+
+            // 4. Update the table status to 'OCCUPIED'
+            try (PreparedStatement updateTable = conn.prepareStatement("UPDATE tables SET status = 'OCCUPIED' WHERE id = ?")) {
+                updateTable.setInt(1, tableId);
+                updateTable.executeUpdate();
+            }
+
+            conn.commit(); // Commit transaction
+
+            showAlert("Order Placed", "Your order has been placed successfully! Your Table Number is: " + tableId);
+
+            selectedItems.clear();
+            //StaffController.updateStaffDashboard(); // Notify staff to refresh tables
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            showAlert("Error", "Failed to place the order: " + e.getMessage());
+        }
     }
 
-    private TextField createStyledTextField(String prompt) {
-        TextField field = new TextField();
-        field.setPromptText(prompt);
-        field.getStyleClass().add("custom-text-field");
-        return field;
+    // Fetch a random available table
+    private int fetchRandomAvailableTable(Connection conn) throws SQLException {
+        String query = "SELECT id FROM tables WHERE status = 'AVAILABLE'";
+        List<Integer> availableTables = new ArrayList<>();
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+            while (rs.next()) {
+                availableTables.add(rs.getInt("id"));
+            }
+        }
+        if (availableTables.isEmpty()) {
+            return -1; // No tables available
+        }
+        Collections.shuffle(availableTables); // Shuffle to pick a random table
+        return availableTables.get(0);
     }
 
-//    // Helper class for menu items
-//    private static class MenuItem {
-//        private final String name;
-//        private final String description;
-//        private final String price;
-//
-//        public MenuItem(String name, String description, String price) {
-//            this.name = name;
-//            this.description = description;
-//            this.price = price;
-//        }
-//
-////        public String getName() { return name; }
-////        public String getDescription() { return description; }
-////        public String getPrice() { return price; }
-//    }
+
+
+
+    private double calculateTotal() {
+        return selectedItems.stream()
+                .mapToDouble(MenuItem::getPrice)
+                .sum();
+    }
+
+    private void showOrderSummary(double total) {
+        Dialog<String> dialog = new Dialog<>();
+        dialog.setTitle("Order Summary");
+
+        VBox content = new VBox(10);
+        content.setPadding(new Insets(10));
+
+        for (MenuItem item : selectedItems) {
+            Label itemLabel = new Label(item.getName() + " - $" + item.getPrice());
+            content.getChildren().add(itemLabel);
+        }
+
+        Label totalLabel = new Label("Total: $" + String.format("%.2f", total));
+        totalLabel.getStyleClass().add("total-label");
+        content.getChildren().add(totalLabel);
+
+        DialogPane dialogPane = dialog.getDialogPane();
+        dialogPane.setContent(content);
+        dialogPane.getButtonTypes().add(ButtonType.CLOSE);
+
+        dialog.showAndWait();
+    }
+
+    private void showAlert(String title, String content) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(content);
+        alert.showAndWait();
+    }
 }

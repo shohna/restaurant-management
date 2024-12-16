@@ -1,6 +1,10 @@
 package application.model.entity;
 
-import java.util.UUID;
+import java.util.*;
+
+import application.DatabaseConnection;
+
+import java.sql.*;
 
 public class Table {
     private int id;
@@ -50,4 +54,15 @@ public class Table {
 		this.currentReservationId = currentReservationId;
 	}
     
+	public void updateTableStatus(int tableId, String status) {
+	    String query = "UPDATE tables SET status = ? WHERE id = ?";
+	    try (Connection conn = DatabaseConnection.getConnection();
+	         PreparedStatement stmt = conn.prepareStatement(query)) {
+	        stmt.setString(1, status);
+	        stmt.setInt(2, tableId);
+	        stmt.executeUpdate();
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	    }
+	}
 }

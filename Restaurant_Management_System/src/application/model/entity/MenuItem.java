@@ -1,70 +1,80 @@
 package application.model.entity;
 
-public class MenuItem {
-    private int id;
-    private String name;
-    private String description;
-    private double price;
-    private String category;
-    private boolean isAvailable;
+import java.sql.*;
+import java.util.*;
 
-    // Constructor
-    public MenuItem(int id, String name, String description, double price, String category) {
+import application.DatabaseConnection;
+import javafx.beans.property.*;
+
+public class MenuItem {
+    private final int id; // Add this field
+    private final SimpleStringProperty name;
+    private final SimpleDoubleProperty price;
+    private final SimpleStringProperty description;
+    private final SimpleStringProperty category;
+    private int quantity; // Quantity selected for an order
+
+    public MenuItem(int id, String name, double price, String description, String category) {
         this.id = id;
-        this.name = name;
-        this.description = description;
-        this.price = price;
-        this.category = category;
-        this.isAvailable = true;
+        this.name = new SimpleStringProperty(name);
+        this.price = new SimpleDoubleProperty(price);
+        this.description = new SimpleStringProperty(description);
+        this.category = new SimpleStringProperty(category);
+        this.quantity = 0; // Default quantity
     }
 
-    // Getters and Setters
+    // Getter for id
     public int getId() {
         return id;
     }
 
+    // Other getters and setters
     public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
+        return name.get();
     }
 
     public double getPrice() {
-        return price;
+        return price.get();
     }
 
-    public void setPrice(double price) {
-        this.price = price;
+    public String getDescription() {
+        return description.get();
     }
 
     public String getCategory() {
-        return category;
+        return category.get();
     }
 
-    public void setCategory(String category) {
-        this.category = category;
+    public int getQuantity() {
+        return quantity;
     }
 
-    public boolean isAvailable() {
-        return isAvailable;
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
+    }
+    
+    public static Map<String, List<MenuItem>> fetchMenuItems() {
+        Map<String, List<MenuItem>> categorizedMenu = new HashMap<>();
+        String query = "SELECT id, name, price, description, category FROM menu_items WHERE is_available > 0";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String name = rs.getString("name");
+                double price = rs.getDouble("price");
+                String description = rs.getString("description");
+                String category = rs.getString("category");
+
+                MenuItem item = new MenuItem(id, name, price, description, category);
+                categorizedMenu.computeIfAbsent(category, k -> new ArrayList<>()).add(item);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return categorizedMenu;
     }
 
-    public void setAvailable(boolean available) {
-        isAvailable = available;
-    }
-
-    @Override
-    public String toString() {
-        return name + " - $" + price;
-    }
 }
