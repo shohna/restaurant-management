@@ -28,9 +28,8 @@ public class CustomerController {
         // Add categories dynamically
         for (Map.Entry<String, List<MenuItem>> entry : menuItems.entrySet()) {
             content.getChildren().addAll(
-                createMenuCategory(entry.getKey(), entry.getValue()),
-                new Separator()
-            );
+                    createMenuCategory(entry.getKey(), entry.getValue()),
+                    new Separator());
         }
 
         ScrollPane scrollPane = new ScrollPane(content);
@@ -97,7 +96,6 @@ public class CustomerController {
         return category;
     }
 
-
     @FXML
     public void showReservationDialog() {
         Dialog<String> dialog = new Dialog<>();
@@ -124,11 +122,10 @@ public class CustomerController {
         Spinner<Integer> guestSpinner = new Spinner<>(1, 10, 2);
 
         content.getChildren().addAll(
-            nameLabel, nameField,
-            dateLabel, datePicker,
-            timeLabel, timeComboBox,
-            guestsLabel, guestSpinner
-        );
+                nameLabel, nameField,
+                dateLabel, datePicker,
+                timeLabel, timeComboBox,
+                guestsLabel, guestSpinner);
 
         dialogPane.setContent(content);
 
@@ -137,6 +134,24 @@ public class CustomerController {
 
         dialog.setResultConverter(button -> {
             if (button == reserveButton) {
+                // Validate reservation fields
+                StringBuilder errors = new StringBuilder();
+
+                if (nameField.getText().isEmpty()) {
+                    errors.append("Name is required.\n");
+                }
+                if (datePicker.getValue() == null) {
+                    errors.append("Date is required.\n");
+                }
+                if (timeComboBox.getValue() == null) {
+                    errors.append("Time is required.\n");
+                }
+
+                if (errors.length() > 0) {
+                    showAlert("Missing Information", errors.toString());
+                    return null; // Do not proceed with the reservation
+                }
+
                 // Collect and process reservation data
                 String name = nameField.getText();
                 LocalDate date = datePicker.getValue();
@@ -198,7 +213,8 @@ public class CustomerController {
             }
 
             // 4. Update the table status to 'OCCUPIED'
-            try (PreparedStatement updateTable = conn.prepareStatement("UPDATE tables SET status = 'OCCUPIED' WHERE id = ?")) {
+            try (PreparedStatement updateTable = conn
+                    .prepareStatement("UPDATE tables SET status = 'OCCUPIED' WHERE id = ?")) {
                 updateTable.setInt(1, tableId);
                 updateTable.executeUpdate();
             }
@@ -208,7 +224,7 @@ public class CustomerController {
             showAlert("Order Placed", "Your order has been placed successfully! Your Table Number is: " + tableId);
 
             selectedItems.clear();
-            //StaffController.updateStaffDashboard(); // Notify staff to refresh tables
+            // StaffController.updateStaffDashboard(); // Notify staff to refresh tables
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -221,7 +237,7 @@ public class CustomerController {
         String query = "SELECT id FROM tables WHERE status = 'AVAILABLE'";
         List<Integer> availableTables = new ArrayList<>();
         try (Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
+                ResultSet rs = stmt.executeQuery(query)) {
             while (rs.next()) {
                 availableTables.add(rs.getInt("id"));
             }
@@ -232,9 +248,6 @@ public class CustomerController {
         Collections.shuffle(availableTables); // Shuffle to pick a random table
         return availableTables.get(0);
     }
-
-
-
 
     private double calculateTotal() {
         return selectedItems.stream()

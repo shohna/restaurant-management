@@ -21,29 +21,46 @@ import application.model.entity.Order;
 public class StaffController {
 
 	// FXML Injected Controls
-	@FXML private TableView<Reservation> reservationsTable;
-	@FXML private GridPane tablesGrid;
-	@FXML private Label statusLabel;
-	@FXML private Label timeLabel;
-	@FXML private ListView<String> kitchenOrdersList;
-	@FXML private ComboBox<String> orderStatusCombo;
+	@FXML
+	private TableView<Reservation> reservationsTable;
+	@FXML
+	private GridPane tablesGrid;
+	@FXML
+	private Label statusLabel;
+	@FXML
+	private Label timeLabel;
+	@FXML
+	private ListView<String> kitchenOrdersList;
+	@FXML
+	private ComboBox<String> orderStatusCombo;
 
 	// Table Columns
-	@FXML private TableColumn<Reservation, String> timeColumn;
-	@FXML private TableColumn<Reservation, String> nameColumn;
-	@FXML private TableColumn<Reservation, String> guestsColumn;
-	@FXML private TableColumn<Reservation, String> statusColumn;
+	@FXML
+	private TableColumn<Reservation, String> timeColumn;
+	@FXML
+	private TableColumn<Reservation, String> nameColumn;
+	@FXML
+	private TableColumn<Reservation, String> guestsColumn;
+	@FXML
+	private TableColumn<Reservation, String> statusColumn;
 
 	// Reports
-	@FXML private LineChart<String, Number> salesChart;
-	@FXML private PieChart itemsChart;
-	@FXML private BarChart<String, Number> tableUsageChart;
-	@FXML private DatePicker reportStartDate;
-	@FXML private DatePicker reportEndDate;
-	@FXML private ComboBox<String> reportTypeCombo;
+	@FXML
+	private LineChart<String, Number> salesChart;
+	@FXML
+	private PieChart itemsChart;
+	@FXML
+	private BarChart<String, Number> tableUsageChart;
+	@FXML
+	private DatePicker reportStartDate;
+	@FXML
+	private DatePicker reportEndDate;
+	@FXML
+	private ComboBox<String> reportTypeCombo;
 
 	private Timeline clock;
-	@FXML private Map<Integer, TableButton> tableButtons = new HashMap<>();
+	@FXML
+	private Map<Integer, TableButton> tableButtons = new HashMap<>();
 	private TableButton selectedTable = null;
 
 	@FXML
@@ -69,103 +86,97 @@ public class StaffController {
 		orderStatusCombo.getItems().addAll(
 				"Preparing",
 				"Ready",
-				"Served"
-				);
+				"Served");
 	}
-	
+
 	@FXML
 	private void refreshTablesStatus() {
-	    try (Connection conn = DatabaseConnection.getConnection();
-	         Statement stmt = conn.createStatement();
-	         ResultSet rs = stmt.executeQuery("SELECT id, status FROM tables")) {
+		try (Connection conn = DatabaseConnection.getConnection();
+				Statement stmt = conn.createStatement();
+				ResultSet rs = stmt.executeQuery("SELECT id, status FROM tables")) {
 
-	        while (rs.next()) {
-	            int tableId = rs.getInt("id");
-	            String status = rs.getString("status");
-	            TableButton tableButton = tableButtons.get(tableId);
-	            if (tableButton != null) {
-	                if (status.equalsIgnoreCase("OCCUPIED")) {
-	                    tableButton.setStyle("-fx-background-color: red;");
-	                } else {
-	                    tableButton.setStyle("-fx-background-color: green;");
-	                }
-	            }
-	        }
-	    } catch (SQLException e) {
-	        e.printStackTrace();
-	    }
+			while (rs.next()) {
+				int tableId = rs.getInt("id");
+				String status = rs.getString("status");
+				TableButton tableButton = tableButtons.get(tableId);
+				if (tableButton != null) {
+					if (status.equalsIgnoreCase("OCCUPIED")) {
+						tableButton.setStyle("-fx-background-color: red;");
+					} else {
+						tableButton.setStyle("-fx-background-color: green;");
+					}
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 	}
-
 
 	@FXML
 	private void reloadOrdersAndKitchen() {
-	    List<String> orders = fetchKitchenOrders();
-	    ObservableList<String> observableOrders = FXCollections.observableArrayList(orders);
-	    kitchenOrdersList.setItems(observableOrders);
+		List<String> orders = fetchKitchenOrders();
+		ObservableList<String> observableOrders = FXCollections.observableArrayList(orders);
+		kitchenOrdersList.setItems(observableOrders);
 
-	    refreshTablesStatus(); // Refresh table colors
+		refreshTablesStatus(); // Refresh table colors
 	}
-
 
 	// Fetch orders for display in Kitchen Orders
 	private List<String> fetchKitchenOrders() {
-	    List<String> kitchenOrders = new ArrayList<>();
-	    String query = """
-	        SELECT o.id, o.table_id, m.name, oi.quantity
-	        FROM orders o
-	        JOIN order_items oi ON o.id = oi.order_id
-	        JOIN menu_items m ON oi.menu_item_id = m.id
-	        WHERE o.status != 'COMPLETED'
-	    """;
+		List<String> kitchenOrders = new ArrayList<>();
+		String query = """
+				    SELECT o.id, o.table_id, m.name, oi.quantity
+				    FROM orders o
+				    JOIN order_items oi ON o.id = oi.order_id
+				    JOIN menu_items m ON oi.menu_item_id = m.id
+				    WHERE o.status != 'COMPLETED'
+				""";
 
-	    try (Connection conn = DatabaseConnection.getConnection();
-	         Statement stmt = conn.createStatement();
-	         ResultSet rs = stmt.executeQuery(query)) {
+		try (Connection conn = DatabaseConnection.getConnection();
+				Statement stmt = conn.createStatement();
+				ResultSet rs = stmt.executeQuery(query)) {
 
-	        while (rs.next()) {
-	            int orderId = rs.getInt("id");
-	            int tableId = rs.getInt("table_id");
-	            String itemName = rs.getString("name");
-	            int quantity = rs.getInt("quantity");
+			while (rs.next()) {
+				int orderId = rs.getInt("id");
+				int tableId = rs.getInt("table_id");
+				String itemName = rs.getString("name");
+				int quantity = rs.getInt("quantity");
 
-	            // Format orders for display
-	            String orderDetails = String.format("Order #%d (Table %d): %s x%d", 
-	                                                orderId, tableId, itemName, quantity);
-	            kitchenOrders.add(orderDetails);
-	        }
-	    } catch (SQLException e) {
-	        e.printStackTrace();
-	    }
-	    return kitchenOrders;
+				// Format orders for display
+				String orderDetails = String.format("Order #%d (Table %d): %s x%d",
+						orderId, tableId, itemName, quantity);
+				kitchenOrders.add(orderDetails);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return kitchenOrders;
 	}
-
 
 	@FXML
 	private void handleUpdateKitchenOrder() {
-	    // Get the selected order and status
-	    String selectedOrder = kitchenOrdersList.getSelectionModel().getSelectedItem();
-	    String selectedStatus = orderStatusCombo.getValue();
+		// Get the selected order and status
+		String selectedOrder = kitchenOrdersList.getSelectionModel().getSelectedItem();
+		String selectedStatus = orderStatusCombo.getValue();
 
-	    // Debugging: Verify inputs
-	    System.out.println("Selected Order: " + selectedOrder);
-	    System.out.println("Selected Status: " + selectedStatus);
+		// Debugging: Verify inputs
+		System.out.println("Selected Order: " + selectedOrder);
+		System.out.println("Selected Status: " + selectedStatus);
 
-	    // Check if both inputs are valid
-	    if (selectedOrder == null || selectedStatus == null) {
-	        showAlert("Error", "Please select both an order and a status.");
-	        return;
-	    }
+		// Check if both inputs are valid
+		if (selectedOrder == null || selectedStatus == null) {
+			showAlert("Error", "Please select both an order and a status.");
+			return;
+		}
 
-	    // Extract order ID and update status
-	    int orderId = extractOrderId(selectedOrder);
-	    updateOrderStatus(orderId, selectedStatus);
+		// Extract order ID and update status
+		int orderId = extractOrderId(selectedOrder);
+		updateOrderStatus(orderId, selectedStatus);
 
-	    // Reload the Kitchen Orders
-	    reloadOrdersAndKitchen();
-	    showAlert("Success", "Order status updated successfully!");
+		// Reload the Kitchen Orders
+		reloadOrdersAndKitchen();
+		showAlert("Success", "Order status updated successfully!");
 	}
-
-
 
 	@FXML
 	private void handleClearTable() {
@@ -178,8 +189,7 @@ public class StaffController {
 		Optional<ButtonType> result = showConfirmationDialog(
 				"Clear Table",
 				"Are you sure you want to clear this table?",
-				"This will remove all assignments and guests"
-				);
+				"This will remove all assignments and guests");
 
 		if (result.isPresent() && result.get() == ButtonType.OK) {
 			selectedTable.clearTable();
@@ -223,7 +233,8 @@ public class StaffController {
 			try {
 				int guests = Integer.parseInt(guestsField.getText());
 				String server = serverCombo.getValue();
-				if (server == null) throw new IllegalArgumentException("Server must be selected");
+				if (server == null)
+					throw new IllegalArgumentException("Server must be selected");
 
 				selectedTable.assignTable(server, guests);
 				updateStatus("Table assigned to " + server);
@@ -283,14 +294,12 @@ public class StaffController {
 
 			String status = clickedTable.isOccupied() ? "Occupied" : "Available";
 			content.getChildren().addAll(
-					new Label("Status: " + status)
-					);
+					new Label("Status: " + status));
 
 			if (clickedTable.isOccupied()) {
 				content.getChildren().addAll(
 						new Label("Server: " + clickedTable.getAssignedServer()),
-						new Label("Guests: " + clickedTable.getNumGuests())
-						);
+						new Label("Guests: " + clickedTable.getNumGuests()));
 			}
 
 			dialog.getDialogPane().setContent(content);
@@ -304,23 +313,14 @@ public class StaffController {
 		ObservableList<Reservation> reservations = FXCollections.observableArrayList(
 				new Reservation(LocalDateTime.now().plusHours(1), "John Smith", 4, "Confirmed"),
 				new Reservation(LocalDateTime.now().plusHours(2), "Sarah Johnson", 2, "Pending"),
-				new Reservation(LocalDateTime.now().plusHours(3), "Mike Brown", 6, "Confirmed")
-				);
+				new Reservation(LocalDateTime.now().plusHours(3), "Mike Brown", 6, "Confirmed"));
 
-		timeColumn.setCellValueFactory(cellData -> 
-		new SimpleStringProperty(cellData.getValue().getTime().format(
-				DateTimeFormatter.ofPattern("HH:mm")
-				))
-				);
-		nameColumn.setCellValueFactory(cellData -> 
-		new SimpleStringProperty(cellData.getValue().getName())
-				);
-		guestsColumn.setCellValueFactory(cellData -> 
-		new SimpleStringProperty(String.valueOf(cellData.getValue().getGuests()))
-				);
-		statusColumn.setCellValueFactory(cellData -> 
-		new SimpleStringProperty(cellData.getValue().getStatus())
-				);
+		timeColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getTime().format(
+				DateTimeFormatter.ofPattern("HH:mm"))));
+		nameColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getName()));
+		guestsColumn.setCellValueFactory(
+				cellData -> new SimpleStringProperty(String.valueOf(cellData.getValue().getGuests())));
+		statusColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getStatus()));
 
 		reservationsTable.setItems(reservations);
 	}
@@ -335,7 +335,6 @@ public class StaffController {
 		}
 	}
 
-
 	@FXML
 	private void handleCancelOrder() {
 		String selectedOrder = kitchenOrdersList.getSelectionModel().getSelectedItem();
@@ -347,43 +346,37 @@ public class StaffController {
 	}
 
 	private int extractOrderId(String orderString) {
-	    try {
-	        // Debugging: Print the order string being parsed
-	        System.out.println("Parsing Order String: " + orderString);
+		try {
+			// Debugging: Print the order string being parsed
+			System.out.println("Parsing Order String: " + orderString);
 
-	        // Extract the order ID from the string
-	        return Integer.parseInt(orderString.split("#")[1].split(" ")[0]);
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	        throw new IllegalArgumentException("Invalid order format: " + orderString);
-	    }
+			// Extract the order ID from the string
+			return Integer.parseInt(orderString.split("#")[1].split(" ")[0]);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new IllegalArgumentException("Invalid order format: " + orderString);
+		}
 	}
-
-
-
 
 	private void updateOrderStatus(int orderId, String status) {
-	    String query = "UPDATE orders SET status = ? WHERE id = ?";
-	    try (Connection conn = DatabaseConnection.getConnection();
-	         PreparedStatement stmt = conn.prepareStatement(query)) {
+		String query = "UPDATE orders SET status = ? WHERE id = ?";
+		try (Connection conn = DatabaseConnection.getConnection();
+				PreparedStatement stmt = conn.prepareStatement(query)) {
 
-	        stmt.setString(1, status);
-	        stmt.setInt(2, orderId);
-	        stmt.executeUpdate();
-	    } catch (SQLException e) {
-	        e.printStackTrace();
-	    }
+			stmt.setString(1, status);
+			stmt.setInt(2, orderId);
+			stmt.executeUpdate();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 	}
-
-
 
 	@FXML
 	private void handleLogout() {
 		Optional<ButtonType> result = showConfirmationDialog(
 				"Logout",
 				"Are you sure you want to logout?",
-				"Any unsaved changes will be lost."
-				);
+				"Any unsaved changes will be lost.");
 
 		if (result.isPresent() && result.get() == ButtonType.OK) {
 			updateStatus("Logged out");
@@ -425,8 +418,7 @@ public class StaffController {
 				new PieChart.Data("Pizza", 30),
 				new PieChart.Data("Pasta", 20),
 				new PieChart.Data("Salad", 15),
-				new PieChart.Data("Dessert", 10)
-				);
+				new PieChart.Data("Dessert", 10));
 
 		itemsChart.setData(pieChartData);
 	}
@@ -448,8 +440,7 @@ public class StaffController {
 				"Daily Sales Report",
 				"Popular Items Report",
 				"Table Usage Report",
-				"Server Performance Report"
-				);
+				"Server Performance Report");
 	}
 
 	// Utility Methods
@@ -487,15 +478,37 @@ public class StaffController {
 			this.status = status;
 		}
 
-		public LocalDateTime getTime() { return time; }
-		public String getName() { return name; }
-		public int getGuests() { return guests; }
-		public String getStatus() { return status; }
+		public LocalDateTime getTime() {
+			return time;
+		}
 
-		public void setTime(LocalDateTime time) { this.time = time; }
-		public void setName(String name) { this.name = name; }
-		public void setGuests(int guests) { this.guests = guests; }
-		public void setStatus(String status) { this.status = status; }
+		public String getName() {
+			return name;
+		}
+
+		public int getGuests() {
+			return guests;
+		}
+
+		public String getStatus() {
+			return status;
+		}
+
+		public void setTime(LocalDateTime time) {
+			this.time = time;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public void setGuests(int guests) {
+			this.guests = guests;
+		}
+
+		public void setStatus(String status) {
+			this.status = status;
+		}
 
 		@Override
 		public String toString() {
