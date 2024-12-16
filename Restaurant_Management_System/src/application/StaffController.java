@@ -8,9 +8,13 @@ import javafx.collections.ObservableList;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import javafx.animation.*;
+import javafx.application.Platform;
 import javafx.util.Duration;
 
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.sql.*;
 
 import javafx.beans.property.SimpleStringProperty;
@@ -59,6 +63,7 @@ public class StaffController {
 	private ComboBox<String> reportTypeCombo;
 
 	private Timeline clock;
+	private ScheduledExecutorService executorService;
 	@FXML
 	private Map<Integer, TableButton> tableButtons = new HashMap<>();
 	private TableButton selectedTable = null;
@@ -70,6 +75,7 @@ public class StaffController {
 		loadReservations();
 		setupKitchenStatus();
 		initializeReportControls();
+		setupPeriodicUIRefresh();
 	}
 
 	private void setupClock() {
@@ -87,6 +93,17 @@ public class StaffController {
 				"Preparing",
 				"Ready",
 				"Served");
+	}
+
+	private void setupPeriodicUIRefresh() {
+		executorService = Executors.newSingleThreadScheduledExecutor();
+		executorService.scheduleAtFixedRate(() -> {
+			Platform.runLater(() -> {
+				reloadOrdersAndKitchen(); // Update kitchen orders
+				refreshTablesStatus(); // Refresh table statuses
+				updateStatus("UI refreshed at " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+			});
+		}, 0, 10, TimeUnit.SECONDS);
 	}
 
 	@FXML
@@ -151,6 +168,20 @@ public class StaffController {
 			e.printStackTrace();
 		}
 		return kitchenOrders;
+	}
+
+	private void shutdownExecutorService() {
+		if (executorService != null && !executorService.isShutdown()) {
+			executorService.shutdown();
+			try {
+				if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
+					executorService.shutdownNow();
+				}
+			} catch (InterruptedException e) {
+				executorService.shutdownNow();
+				Thread.currentThread().interrupt();
+			}
+		}
 	}
 
 	@FXML
@@ -379,6 +410,7 @@ public class StaffController {
 				"Any unsaved changes will be lost.");
 
 		if (result.isPresent() && result.get() == ButtonType.OK) {
+			shutdownExecutorService();
 			updateStatus("Logged out");
 		}
 	}
