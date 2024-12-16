@@ -31,7 +31,6 @@ replay_pid*
 .idea/
 *.iml
 *.iws
-.settings/
 .classpath
 .project
 .metadata
