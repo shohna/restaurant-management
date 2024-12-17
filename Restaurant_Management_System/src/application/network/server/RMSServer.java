@@ -55,8 +55,8 @@ public class RMSServer {
                     return handleReservation(message);
                 case GET_ALL_RESERVATIONS:  // Add this case
                     return handleGetAllReservations();
-//                case GET_UPDATES:
-//                    return handleGetAllReservations(); 
+                case GET_UPDATES :
+                    return handleGetUpdates(); 
 //                case GET_AVAILABLE_TABLES:
 //                    return handleGetTables(message);
 //                case PLACE_ORDER:
@@ -68,6 +68,10 @@ public class RMSServer {
         } catch (Exception e) {
             return new NetworkMessage(MessageType.ERROR, e.getMessage());
         }
+    }
+    
+    private NetworkMessage handleGetUpdates() {
+        return new NetworkMessage(MessageType.SUCCESS, new HashMap<>());
     }
     
     private NetworkMessage handleReservation(NetworkMessage message) {
