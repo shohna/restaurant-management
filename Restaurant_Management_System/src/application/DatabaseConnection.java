@@ -41,17 +41,17 @@ public class DatabaseConnection {
                         )
                     """);
 
+//            conn.createStatement().execute("DROP TABLE IF EXISTS reservations");
             // Create reservations table
             conn.createStatement().execute("""
-                        CREATE TABLE IF NOT EXISTS reservations (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            customer_id INTEGER,
-                            date_time TEXT NOT NULL,
-                            table_id INTEGER,
-                            status TEXT NOT NULL,
-                            FOREIGN KEY (customer_id) REFERENCES users(id)
-                        )
-                    """);
+            		CREATE TABLE IF NOT EXISTS reservations (
+            		    id INTEGER PRIMARY KEY AUTOINCREMENT,
+            		    time TEXT NOT NULL,
+            		    name TEXT NOT NULL,
+            		    guests INTEGER NOT NULL,
+            		    status TEXT NOT NULL
+            		)
+            		""");
 
             // Create menu_items table
             conn.createStatement().execute("""

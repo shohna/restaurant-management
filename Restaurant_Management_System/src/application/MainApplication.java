@@ -1,5 +1,9 @@
 package application;
 
+import java.io.IOException;
+import java.sql.SQLException;
+
+import application.network.server.RMSServer;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -8,6 +12,33 @@ import javafx.stage.Stage;
 import javafx.scene.control.Alert;
 
 public class MainApplication extends Application {
+	private static RMSServer server;
+    private CustomerController customerController;
+    private StaffController staffController;
+
+    @Override
+    public void init() {
+        // Only start server if we're running as staff
+//        if (role.equals("Staff")) {
+//            new Thread(() -> {
+//                try {
+//                    System.out.println("Starting RMS Server...");
+//                    server = new RMSServer();
+//                    server.start();
+//                } catch (IOException e) {
+//                    System.err.println("Failed to start server: " + e.getMessage());
+//                    e.printStackTrace();
+//                }
+//            }).start();
+//
+//            // Give the server a moment to start
+//            try {
+//                Thread.sleep(1000);
+//            } catch (InterruptedException e) {
+//                Thread.currentThread().interrupt();
+//            }
+//        }
+    }
 
     @Override
     public void start(Stage primaryStage) {
@@ -27,6 +58,26 @@ public class MainApplication extends Application {
                 alert.setContentText("Invalid credentials or cancelled login. Application will exit.");
                 alert.showAndWait();
                 return; // Exit the application
+            }
+            
+            if (role.equals("Staff")) {
+                new Thread(() -> {
+                    try {
+                        System.out.println("Starting RMS Server...");
+                        server = new RMSServer();
+                        server.start();
+                    } catch (IOException | SQLException e) {
+                        System.err.println("Failed to start server: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }).start();
+
+                // Give the server a moment to start
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
             }
 
             // Load appropriate interface based on the authenticated role
@@ -51,6 +102,7 @@ public class MainApplication extends Application {
             primaryStage.show();
 
         } catch (Exception e) {
+        	
             e.printStackTrace();
         }
     }

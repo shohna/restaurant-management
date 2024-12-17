@@ -8,15 +8,20 @@ import javafx.collections.ObservableList;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import javafx.animation.*;
+import javafx.application.Platform;
 import javafx.util.Duration;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.io.IOException;
 import java.sql.*;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
 import javafx.scene.chart.*;
 import application.model.entity.Order;
+import application.network.client.RMSClient;
+import application.network.message.MessageType;
 
 public class StaffController {
 
@@ -62,15 +67,159 @@ public class StaffController {
 	@FXML
 	private Map<Integer, TableButton> tableButtons = new HashMap<>();
 	private TableButton selectedTable = null;
+	
+	 private RMSClient client;
+	 private Timeline networkUpdateTimer;
 
 	@FXML
-	public void initialize() {
+	public void initialize() throws IOException {
+		
+		// Initialize network client
+        initializeNetworkConnection();
+        
+        timeColumn.setCellValueFactory(cellData -> {
+            if (cellData.getValue() != null && cellData.getValue().getTime() != null) {
+                LocalDateTime dateTime = cellData.getValue().getTime();
+                String formattedTime = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd h:mm a"));
+                return new SimpleStringProperty(formattedTime);
+            }
+            return new SimpleStringProperty("");
+        });
+        
+        nameColumn.setCellValueFactory(cellData -> {
+            if (cellData.getValue() != null) {
+                return new SimpleStringProperty(cellData.getValue().getName());
+            }
+            return new SimpleStringProperty("");
+        });
+        
+        guestsColumn.setCellValueFactory(cellData -> {
+            if (cellData.getValue() != null) {
+                return new SimpleStringProperty(String.valueOf(cellData.getValue().getGuests()));
+            }
+            return new SimpleStringProperty("");
+        });
+        
+        statusColumn.setCellValueFactory(cellData -> {
+            if (cellData.getValue() != null) {
+                return new SimpleStringProperty(cellData.getValue().getStatus());
+            }
+            return new SimpleStringProperty("");
+        });
+
+        // Make sure the table is not null and visible
+        if (reservationsTable != null) {
+            reservationsTable.setVisible(true);
+        } else {
+            System.err.println("reservationsTable is null!");
+        }
+        
+        // Setup periodic updates
+        setupNetworkUpdates();
+        
 		setupClock();
 		setupTables();
 		loadReservations();
 		setupKitchenStatus();
 		initializeReportControls();
+		
+		startListeningForUpdates();
 	}
+	
+	private void initializeNetworkConnection() {
+        try {
+            System.out.println("Attempting to connect to server...");
+            client = new RMSClient("localhost", 5000);
+            System.out.println("Successfully connected to server");
+        } catch (IOException e) {
+            Platform.runLater(() -> {
+                showAlert("Connection Error", 
+                    "Could not connect to server: " + e.getMessage() + 
+                    "\nSome features may not be available.");
+            });
+            e.printStackTrace();
+        }
+    }
+	
+	private void startListeningForUpdates() {
+	    Thread listenerThread = new Thread(() -> {
+	        try {
+	            while (!Thread.currentThread().isInterrupted()) {
+	                client.sendMessage(MessageType.GET_UPDATES, null)
+	                    .thenAccept(response -> {
+	                        if (response.getType() == MessageType.SUCCESS) {
+	                            @SuppressWarnings("unchecked")
+	                            Map<String, Object> updates = (Map<String, Object>) response.getPayload();
+	                            
+	                            Platform.runLater(() -> {
+	                                if (updates.containsKey("reservations")) {
+	                                    @SuppressWarnings("unchecked")
+	                                    List<Map<String, Object>> reservations = 
+	                                        (List<Map<String, Object>>) updates.get("reservations");
+	                                    updateReservationsFromMaps(reservations);
+	                                }
+	                            });
+	                        }
+	                    })
+	                    .exceptionally(e -> {
+	                        System.err.println("Update error: " + e.getMessage());
+	                        return null;
+	                    });
+	                
+	                // Increase the delay between updates to reduce server load
+	                Thread.sleep(5000);  // Check every 5 seconds instead of 2
+	            }
+	        } catch (InterruptedException e) {
+	            Thread.currentThread().interrupt();
+	        }
+	    });
+	    
+	    listenerThread.setDaemon(true);
+	    listenerThread.start();
+	}
+
+	private void updateReservationsFromMaps(List<Map<String, Object>> reservationMaps) {
+	    List<Reservation> reservations = reservationMaps.stream()
+	        .map(map -> {
+	            try {
+	                LocalDateTime time = LocalDateTime.parse(
+	                    (String) map.get("time"),
+	                    DateTimeFormatter.ofPattern("yyyy-MM-dd h:mm a", Locale.ENGLISH)
+	                );
+	                
+	                return new Reservation(
+	                    time,
+	                    (String) map.get("name"),
+	                    ((Number) map.get("guests")).intValue(),
+	                    (String) map.get("status")
+	                );
+	            } catch (Exception e) {
+	                System.err.println("Error parsing reservation: " + map);
+	                return null;
+	            }
+	        })
+	        .filter(Objects::nonNull)
+	        .collect(Collectors.toList());
+	        
+	    ObservableList<Reservation> observableReservations = 
+	        FXCollections.observableArrayList(reservations);
+	    reservationsTable.setItems(observableReservations);
+	}
+	
+	private void updateReservationsTable(List<Reservation> reservations) {
+	    ObservableList<Reservation> observableReservations = FXCollections.observableArrayList(reservations);
+	    reservationsTable.setItems(observableReservations);
+	}
+	
+	private void setupNetworkUpdates() {
+        networkUpdateTimer = new Timeline(new KeyFrame(Duration.seconds(30), e -> {
+        	loadReservations();
+//            fetchOrderUpdates();
+//            fetchTableStatuses();
+        }));
+        networkUpdateTimer.setCycleCount(Timeline.INDEFINITE);
+        networkUpdateTimer.play();
+    }
 
 	private void setupClock() {
 		clock = new Timeline(new KeyFrame(Duration.ZERO, e -> {
@@ -310,19 +459,56 @@ public class StaffController {
 	}
 
 	private void loadReservations() {
-		ObservableList<Reservation> reservations = FXCollections.observableArrayList(
-				new Reservation(LocalDateTime.now().plusHours(1), "John Smith", 4, "Confirmed"),
-				new Reservation(LocalDateTime.now().plusHours(2), "Sarah Johnson", 2, "Pending"),
-				new Reservation(LocalDateTime.now().plusHours(3), "Mike Brown", 6, "Confirmed"));
-
-		timeColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getTime().format(
-				DateTimeFormatter.ofPattern("HH:mm"))));
-		nameColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getName()));
-		guestsColumn.setCellValueFactory(
-				cellData -> new SimpleStringProperty(String.valueOf(cellData.getValue().getGuests())));
-		statusColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getStatus()));
-
-		reservationsTable.setItems(reservations);
+	    System.out.println("Loading reservations...");
+	    client.sendMessage(MessageType.GET_ALL_RESERVATIONS, null)
+	    .thenAccept(response -> {
+	        System.out.println("Received response: " + response.getType());
+	        if (response.getType() == MessageType.SUCCESS) {
+	            @SuppressWarnings("unchecked")
+	            List<Map<String, Object>> reservationMaps = (List<Map<String, Object>>) response.getPayload();
+	            
+	            List<Reservation> reservations = reservationMaps.stream()
+	                .map(map -> {
+	                    try {
+	                        // Parse the datetime string with 12-hour format
+	                        String timeStr = (String) map.get("time");
+	                        LocalDateTime time = LocalDateTime.parse(
+	                            timeStr,
+	                            DateTimeFormatter.ofPattern("yyyy-MM-dd h:mm a", Locale.ENGLISH)
+	                        );
+	                        
+	                        Reservation reservation = new Reservation(
+	                            time,
+	                            (String) map.get("name"),
+	                            ((Number) map.get("guests")).intValue(),
+	                            (String) map.get("status")
+	                        );
+	                        
+	                        System.out.println("Successfully parsed reservation: " + reservation);
+	                        return reservation;
+	                    } catch (Exception e) {
+	                        System.err.println("Error parsing reservation data: " + map);
+	                        e.printStackTrace();
+	                        return null;
+	                    }
+	                })
+	                .filter(Objects::nonNull)
+	                .collect(Collectors.toList());
+	            
+	            Platform.runLater(() -> {
+	                ObservableList<Reservation> observableReservations = 
+	                    FXCollections.observableArrayList(reservations);
+	                reservationsTable.setItems(observableReservations);
+	                System.out.println("Table updated with " + observableReservations.size() + " items");
+	            });
+	        } else {
+	            System.out.println("Error response: " + response.getPayload());
+	        }
+	    }).exceptionally(e -> {
+	        System.err.println("Error loading reservations: " + e.getMessage());
+	        e.printStackTrace();
+	        return null;
+	    });
 	}
 
 	@FXML
