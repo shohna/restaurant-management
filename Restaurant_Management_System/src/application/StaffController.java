@@ -22,7 +22,6 @@ import java.sql.*;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
 import javafx.scene.chart.*;
-import application.model.entity.Order;
 import application.network.client.RMSClient;
 import application.network.message.MessageType;
 
@@ -208,11 +207,6 @@ public class StaffController {
 		reservationsTable.setItems(observableReservations);
 	}
 
-	private void updateReservationsTable(List<Reservation> reservations) {
-		ObservableList<Reservation> observableReservations = FXCollections.observableArrayList(reservations);
-		reservationsTable.setItems(observableReservations);
-	}
-
 	private void setupNetworkUpdates() {
 		networkUpdateTimer = new Timeline(new KeyFrame(Duration.seconds(30), e -> {
 			loadReservations();
@@ -316,20 +310,6 @@ public class StaffController {
 		return kitchenOrders;
 	}
 
-	private void shutdownExecutorService() {
-		if (executorService != null && !executorService.isShutdown()) {
-			executorService.shutdown();
-			try {
-				if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
-					executorService.shutdownNow();
-				}
-			} catch (InterruptedException e) {
-				executorService.shutdownNow();
-				Thread.currentThread().interrupt();
-			}
-		}
-	}
-
 	@FXML
 	private void handleClearTable() {
 		TableButton selectedTable = tableButtons.values().stream()
@@ -389,52 +369,49 @@ public class StaffController {
 
 	@FXML
 	public void handleAssignTable() {
-		TableButton selectedTable = getSelectedTable();
-		if (selectedTable == null) {
-			showAlert("Error", "Please select a table first");
-			return;
-		}
+	    TableButton selectedTable = getSelectedTable();
+	    if (selectedTable == null) {
+	        showAlert("Error", "Please select a table first");
+	        return;
+	    }
 
-		Dialog<ButtonType> dialog = new Dialog<>();
-		dialog.setTitle("Assign Table");
+	    // Dialog for assigning table with guests input
+	    Dialog<ButtonType> dialog = new Dialog<>();
+	    dialog.setTitle("Assign Table");
 
-		GridPane grid = new GridPane();
-		grid.setHgap(10);
-		grid.setVgap(10);
-		grid.setPadding(new Insets(20));
+	    GridPane grid = new GridPane();
+	    grid.setHgap(10);
+	    grid.setVgap(10);
+	    grid.setPadding(new Insets(20));
 
-		TextField guestsField = new TextField();
-		guestsField.setPromptText("Number of guests");
+	    TextField guestsField = new TextField();
+	    guestsField.setPromptText("Number of guests");
 
-		ComboBox<String> serverCombo = new ComboBox<>();
-		serverCombo.getItems().addAll("Server 1", "Server 2", "Server 3");
-		serverCombo.setPromptText("Select server");
+	    grid.add(new Label("Guests:"), 0, 0);
+	    grid.add(guestsField, 1, 0);
 
-		grid.add(new Label("Guests:"), 0, 0);
-		grid.add(guestsField, 1, 0);
-		grid.add(new Label("Server:"), 0, 1);
-		grid.add(serverCombo, 1, 1);
+	    dialog.getDialogPane().setContent(grid);
+	    dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
-		dialog.getDialogPane().setContent(grid);
-		dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+	    Optional<ButtonType> result = dialog.showAndWait();
+	    if (result.isPresent() && result.get() == ButtonType.OK) {
+	        try {
+	            int guests = Integer.parseInt(guestsField.getText());
+	            selectedTable.assignTable("Assigned", guests);
 
-		Optional<ButtonType> result = dialog.showAndWait();
-		if (result.isPresent() && result.get() == ButtonType.OK) {
-			try {
-				int guests = Integer.parseInt(guestsField.getText());
-				String server = serverCombo.getValue();
-				if (server == null)
-					throw new IllegalArgumentException("Server must be selected");
+	            // Mark the table as occupied (change color to red)
+	            selectedTable.setStyle("-fx-background-color: red; -fx-text-fill: white;");
 
-				selectedTable.assignTable(server, guests);
-				updateStatus("Table assigned to " + server);
-			} catch (NumberFormatException e) {
-				showAlert("Error", "Please enter a valid number of guests");
-			} catch (IllegalArgumentException e) {
-				showAlert("Error", e.getMessage());
-			}
-		}
+	            // Update the table status in the database
+	            updateTableStatusInDatabase(selectedTable.getTableId(), "OCCUPIED");
+
+	            updateStatus("Table " + selectedTable.getTableId() + " assigned successfully.");
+	        } catch (NumberFormatException e) {
+	            showAlert("Error", "Please enter a valid number of guests");
+	        }
+	    }
 	}
+
 
 	private TableButton getSelectedTable() {
 		return selectedTable;
@@ -624,15 +601,6 @@ public class StaffController {
 				"Popular Items Report",
 				"Table Usage Report",
 				"Server Performance Report");
-	}
-
-	private void moveOrderToReady(String orderDetails) {
-		inQueueOrders.remove(orderDetails);
-		readyToServeOrders.add(orderDetails);
-
-		// Update order status in the database
-		int orderId = extractOrderId(orderDetails);
-		updateOrderStatus(orderId, "READY_TO_SERVE");
 	}
 
 	@FXML

@@ -82,13 +82,13 @@
 				<TableView fx:id="reservationsTable" VBox.vgrow="ALWAYS">
 					<columns>
 						<TableColumn fx:id="timeColumn" text="Time"
-							prefWidth="100" />
+							prefWidth="200" />
 						<TableColumn fx:id="nameColumn" text="Name"
-							prefWidth="150" />
+							prefWidth="200" />
 						<TableColumn fx:id="guestsColumn" text="Guests"
-							prefWidth="100" />
+							prefWidth="200" />
 						<TableColumn fx:id="statusColumn" text="Status"
-							prefWidth="100" />
+							prefWidth="200" />
 					</columns>
 				</TableView>
 			</VBox>
