@@ -9,14 +9,10 @@ import javafx.geometry.Pos;
 import application.model.entity.MenuItem;
 import application.network.client.RMSClient;
 import application.network.message.MessageType;
-import application.network.message.NetworkMessage;
-
 import java.io.IOException;
 import java.sql.*;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 public class CustomerController {
 

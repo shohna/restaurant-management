@@ -13,32 +13,6 @@ import javafx.scene.control.Alert;
 
 public class MainApplication extends Application {
 	private static RMSServer server;
-    private CustomerController customerController;
-    private StaffController staffController;
-
-    @Override
-    public void init() {
-        // Only start server if we're running as staff
-//        if (role.equals("Staff")) {
-//            new Thread(() -> {
-//                try {
-//                    System.out.println("Starting RMS Server...");
-//                    server = new RMSServer();
-//                    server.start();
-//                } catch (IOException e) {
-//                    System.err.println("Failed to start server: " + e.getMessage());
-//                    e.printStackTrace();
-//                }
-//            }).start();
-//
-//            // Give the server a moment to start
-//            try {
-//                Thread.sleep(1000);
-//            } catch (InterruptedException e) {
-//                Thread.currentThread().interrupt();
-//            }
-//        }
-    }
 
     @Override
     public void start(Stage primaryStage) {

@@ -26,10 +26,6 @@ public class TableButton extends Button {
     }
 
     /** Toggles the selection state of the table */
-    private void toggleSelection() {
-        this.isSelected = !this.isSelected;
-        updateStyle();
-    }
 
     public void setSelected(boolean selected) {
         this.isSelected = selected;

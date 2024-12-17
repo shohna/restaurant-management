@@ -24,7 +24,6 @@ import java.sql.*;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
 import javafx.scene.chart.*;
-import application.model.entity.Order;
 import application.network.client.RMSClient;
 import application.network.message.MessageType;
 
@@ -210,11 +209,6 @@ public class StaffController {
 		reservationsTable.setItems(observableReservations);
 	}
 
-	private void updateReservationsTable(List<Reservation> reservations) {
-		ObservableList<Reservation> observableReservations = FXCollections.observableArrayList(reservations);
-		reservationsTable.setItems(observableReservations);
-	}
-
 	private void setupNetworkUpdates() {
 		networkUpdateTimer = new Timeline(new KeyFrame(Duration.seconds(30), e -> {
 			loadReservations();
@@ -318,20 +312,6 @@ public class StaffController {
 		return kitchenOrders;
 	}
 
-	private void shutdownExecutorService() {
-		if (executorService != null && !executorService.isShutdown()) {
-			executorService.shutdown();
-			try {
-				if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
-					executorService.shutdownNow();
-				}
-			} catch (InterruptedException e) {
-				executorService.shutdownNow();
-				Thread.currentThread().interrupt();
-			}
-		}
-	}
-
 	@FXML
 	private void handleClearTable() {
 		TableButton selectedTable = tableButtons.values().stream()
@@ -397,6 +377,7 @@ public class StaffController {
 			return;
 		}
 
+		// Dialog for assigning table with guests input
 		Dialog<ButtonType> dialog = new Dialog<>();
 		dialog.setTitle("Assign Table");
 
@@ -408,14 +389,8 @@ public class StaffController {
 		TextField guestsField = new TextField();
 		guestsField.setPromptText("Number of guests");
 
-		ComboBox<String> serverCombo = new ComboBox<>();
-		serverCombo.getItems().addAll("Server 1", "Server 2", "Server 3");
-		serverCombo.setPromptText("Select server");
-
 		grid.add(new Label("Guests:"), 0, 0);
 		grid.add(guestsField, 1, 0);
-		grid.add(new Label("Server:"), 0, 1);
-		grid.add(serverCombo, 1, 1);
 
 		dialog.getDialogPane().setContent(grid);
 		dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
@@ -424,16 +399,17 @@ public class StaffController {
 		if (result.isPresent() && result.get() == ButtonType.OK) {
 			try {
 				int guests = Integer.parseInt(guestsField.getText());
-				String server = serverCombo.getValue();
-				if (server == null)
-					throw new IllegalArgumentException("Server must be selected");
+				selectedTable.assignTable("Assigned", guests);
 
-				selectedTable.assignTable(server, guests);
-				updateStatus("Table assigned to " + server);
+				// Mark the table as occupied (change color to red)
+				selectedTable.setStyle("-fx-background-color: red; -fx-text-fill: white;");
+
+				// Update the table status in the database
+				updateTableStatusInDatabase(selectedTable.getTableId(), "OCCUPIED");
+
+				updateStatus("Table " + selectedTable.getTableId() + " assigned successfully.");
 			} catch (NumberFormatException e) {
 				showAlert("Error", "Please enter a valid number of guests");
-			} catch (IllegalArgumentException e) {
-				showAlert("Error", e.getMessage());
 			}
 		}
 	}

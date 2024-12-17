@@ -9,7 +9,6 @@ public class ClientHandler implements Runnable {
     private final RMSServer server;
     private ObjectInputStream in;
     private ObjectOutputStream out;
-    private String clientId;
 
     public ClientHandler(Socket socket, RMSServer server) {
         this.socket = socket;
