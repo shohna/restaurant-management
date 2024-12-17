@@ -123,16 +123,6 @@
 					<Tab text="Popular Items">
 						<PieChart fx:id="itemsChart" />
 					</Tab>
-					<Tab text="Table Usage">
-						<BarChart fx:id="tableUsageChart">
-							<xAxis>
-								<CategoryAxis label="Table" />
-							</xAxis>
-							<yAxis>
-								<NumberAxis label="Hours" />
-							</yAxis>
-						</BarChart>
-					</Tab>
 				</TabPane>
 			</VBox>
 		</Tab>

@@ -5,6 +5,8 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import javafx.animation.*;
@@ -574,65 +576,87 @@ public class StaffController {
 			return;
 		}
 
-		setupSalesChart();
-		setupPopularItemsChart();
-		setupTableUsageChart();
+		LocalDate startDate = reportStartDate.getValue();
+		LocalDate endDate = reportEndDate.getValue();
+
+		setupSalesChart(startDate, endDate.plusDays(1));
+		setupPopularItemsChart(startDate, endDate.plusDays(1));
 
 		updateStatus("Report generated successfully");
 	}
 
-	private void setupSalesChart() {
+	private void setupSalesChart(LocalDate startDate, LocalDate endDate) {
 		XYChart.Series<String, Number> series = new XYChart.Series<>();
 		series.setName("Daily Sales");
 
-		series.getData().add(new XYChart.Data<>("Mon", 1500));
-		series.getData().add(new XYChart.Data<>("Tue", 1800));
-		series.getData().add(new XYChart.Data<>("Wed", 2100));
-		series.getData().add(new XYChart.Data<>("Thu", 2400));
-		series.getData().add(new XYChart.Data<>("Fri", 3200));
+		String query = """
+				    SELECT strftime('%Y-%m-%d', order_time) AS day, SUM(total_amount) AS total_sales
+				    FROM orders
+				    WHERE order_time BETWEEN ? AND ?
+				    GROUP BY day
+				    ORDER BY day;
+				""";
 
-		salesChart.getData().clear();
-		salesChart.getData().add(series);
-	}
+		try (Connection conn = DatabaseConnection.getConnection();
+				PreparedStatement stmt = conn.prepareStatement(query)) {
 
-	private void setupPopularItemsChart() {
-		ObservableList<PieChart.Data> pieChartData = FXCollections.observableArrayList(
-				new PieChart.Data("Burger", 25),
-				new PieChart.Data("Pizza", 30),
-				new PieChart.Data("Pasta", 20),
-				new PieChart.Data("Salad", 15),
-				new PieChart.Data("Dessert", 10));
+			stmt.setString(1, startDate.toString());
+			stmt.setString(2, endDate.toString());
 
-		itemsChart.setData(pieChartData);
-	}
+			try (ResultSet rs = stmt.executeQuery()) {
+				while (rs.next()) {
+					String day = rs.getString("day");
+					double totalSales = rs.getDouble("total_sales");
+					series.getData().add(new XYChart.Data<>(day, totalSales));
+				}
+			}
 
-	private void setupTableUsageChart() {
-		XYChart.Series<String, Number> series = new XYChart.Series<>();
-		series.setName("Hours Used");
-
-		for (int i = 1; i <= 10; i++) {
-			series.getData().add(new XYChart.Data<>("Table " + i, Math.random() * 8));
+			salesChart.getData().clear();
+			salesChart.getData().add(series);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			showAlert("Error", "Failed to generate sales chart");
 		}
+	}
 
-		tableUsageChart.getData().clear();
-		tableUsageChart.getData().add(series);
+	private void setupPopularItemsChart(LocalDate startDate, LocalDate endDate) {
+		ObservableList<PieChart.Data> pieChartData = FXCollections.observableArrayList();
+
+		String query = """
+				    SELECT m.name AS item_name, SUM(oi.quantity) AS total_quantity
+				    FROM order_items oi
+				    JOIN menu_items m ON oi.menu_item_id = m.id
+				    JOIN orders o ON oi.order_id = o.id
+				    WHERE o.order_time BETWEEN ? AND ?
+				    GROUP BY m.name
+				    ORDER BY total_quantity DESC;
+				""";
+
+		try (Connection conn = DatabaseConnection.getConnection();
+				PreparedStatement stmt = conn.prepareStatement(query)) {
+
+			stmt.setString(1, startDate.toString());
+			stmt.setString(2, endDate.toString());
+
+			try (ResultSet rs = stmt.executeQuery()) {
+				while (rs.next()) {
+					String itemName = rs.getString("item_name");
+					int totalQuantity = rs.getInt("total_quantity");
+					pieChartData.add(new PieChart.Data(itemName, totalQuantity));
+				}
+			}
+
+			itemsChart.setData(pieChartData);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			showAlert("Error", "Failed to generate popular items chart");
+		}
 	}
 
 	private void initializeReportControls() {
 		reportTypeCombo.getItems().addAll(
 				"Daily Sales Report",
-				"Popular Items Report",
-				"Table Usage Report",
-				"Server Performance Report");
-	}
-
-	private void moveOrderToReady(String orderDetails) {
-		inQueueOrders.remove(orderDetails);
-		readyToServeOrders.add(orderDetails);
-
-		// Update order status in the database
-		int orderId = extractOrderId(orderDetails);
-		updateOrderStatus(orderId, "READY_TO_SERVE");
+				"Popular Items Report");
 	}
 
 	@FXML
