@@ -1,10 +1,13 @@
 package application;
 
 import javafx.application.Application;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
@@ -15,25 +18,42 @@ public class AuthenticationApp extends Application {
     public String authenticateUser(Stage ownerStage) {
         Stage loginStage = new Stage();
         loginStage.initOwner(ownerStage);
-        loginStage.initModality(Modality.APPLICATION_MODAL); // Make it modal
-        loginStage.setTitle("Login");
+        loginStage.initModality(Modality.APPLICATION_MODAL);
+        loginStage.setTitle("CaféDine - Login");
 
+        // Header
+        Label titleLabel = new Label("Welcome to CaféDine");
+        titleLabel.setFont(new Font("Arial", 20));
+        titleLabel.setTextFill(Color.web("#2C3E50"));
+
+        // Input fields
         TextField usernameField = new TextField();
-        usernameField.setPromptText("Username");
+        usernameField.setPromptText("Enter your username");
+        usernameField.setMaxWidth(250);
 
         PasswordField passwordField = new PasswordField();
-        passwordField.setPromptText("Password");
+        passwordField.setPromptText("Enter your password");
+        passwordField.setMaxWidth(250);
 
+        // Buttons
         Button loginButton = new Button("Login");
         Button signupButton = new Button("Sign Up");
+        loginButton.setStyle("-fx-background-color: #27AE60; -fx-text-fill: white;");
+        signupButton.setStyle("-fx-background-color: #2980B9; -fx-text-fill: white;");
 
         Label statusLabel = new Label();
+        statusLabel.setTextFill(Color.web("#E74C3C"));
 
-        VBox layout = new VBox(10, usernameField, passwordField, loginButton, signupButton, statusLabel);
+        // Layout
+        HBox buttonBox = new HBox(10, loginButton, signupButton);
+        buttonBox.setAlignment(Pos.CENTER);
+
+        VBox layout = new VBox(15, titleLabel, usernameField, passwordField, buttonBox, statusLabel);
         layout.setAlignment(Pos.CENTER);
-        layout.setMinWidth(300);
+        layout.setPadding(new Insets(20));
+        layout.setStyle("-fx-background-color: #ECF0F1; -fx-border-color: #BDC3C7; -fx-border-width: 2;");
 
-        Scene scene = new Scene(layout);
+        Scene scene = new Scene(layout, 350, 300);
         loginStage.setScene(scene);
 
         // Handle Login
@@ -44,7 +64,7 @@ public class AuthenticationApp extends Application {
 
             if (role != null) {
                 authenticatedRole = role;
-                loginStage.close(); // Close the login window
+                loginStage.close();
             } else {
                 statusLabel.setText("Invalid credentials. Please try again.");
             }
@@ -53,10 +73,10 @@ public class AuthenticationApp extends Application {
         // Handle Sign-Up
         signupButton.setOnAction(event -> {
             SignupApp signupApp = new SignupApp();
-            signupApp.start(new Stage()); // Open a new sign-up window
+            signupApp.start(new Stage());
         });
 
-        loginStage.showAndWait(); // Block until the login window is closed
+        loginStage.showAndWait();
         return authenticatedRole;
     }
 
@@ -70,16 +90,16 @@ public class AuthenticationApp extends Application {
             var resultSet = statement.executeQuery();
 
             if (resultSet.next()) {
-                return resultSet.getString("role"); // Return the user's role
+                return resultSet.getString("role");
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return null; // Authentication failed
+        return null;
     }
 
     @Override
     public void start(Stage primaryStage) {
-        // This method is not used in this flow
+        authenticateUser(primaryStage);
     }
 }
