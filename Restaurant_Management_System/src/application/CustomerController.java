@@ -1,19 +1,36 @@
 package application;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import application.model.entity.MenuItem;
+import application.network.client.RMSClient;
+import application.network.message.MessageType;
+import application.network.message.NetworkMessage;
+
+import java.io.IOException;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 public class CustomerController {
 
     private final List<MenuItem> selectedItems = new ArrayList<>();
+    private RMSClient client;
+    
+    @FXML
+    public void initialize() {
+        try {
+            client = new RMSClient("localhost", 5000);
+        } catch (IOException e) {
+            showAlert("Connection Error", "Could not connect to server: " + e.getMessage());
+        }
+    }
 
     @FXML
     public void showMenu() {
@@ -98,6 +115,7 @@ public class CustomerController {
 
     @FXML
     public void showReservationDialog() {
+    	System.out.println("Sending reservation request...");
         Dialog<String> dialog = new Dialog<>();
         dialog.setTitle("Make a Reservation");
 
@@ -149,16 +167,41 @@ public class CustomerController {
 
                 if (errors.length() > 0) {
                     showAlert("Missing Information", errors.toString());
-                    return null; // Do not proceed with the reservation
+                    return null;
+                }
+
+                // Check if network client is available
+                if (client == null) {
+                    showAlert("Network Error", 
+                        "Cannot make reservation: Not connected to server");
+                    return null;
                 }
 
                 // Collect and process reservation data
-                String name = nameField.getText();
-                LocalDate date = datePicker.getValue();
-                String time = timeComboBox.getValue();
-                int guests = guestSpinner.getValue();
-                System.out.printf("Reservation: %s, %s, %s, %d guests%n", name, date, time, guests);
-                return "Reservation Successful";
+                Map<String, Object> reservationData = new HashMap<>();
+                reservationData.put("name", nameField.getText());
+                reservationData.put("date", datePicker.getValue().toString());
+                reservationData.put("time", timeComboBox.getValue());
+                reservationData.put("guests", guestSpinner.getValue());
+
+                client.sendMessage(MessageType.MAKE_RESERVATION, reservationData)
+                    .thenAccept(response -> {
+                        Platform.runLater(() -> {
+                            if (response.getType() == MessageType.SUCCESS) {
+                                showAlert("Success", "Reservation made successfully!");
+                            } else {
+                                showAlert("Error", 
+                                    "Failed to make reservation: " + response.getPayload());
+                            }
+                        });
+                    })
+                    .exceptionally(e -> {
+                        Platform.runLater(() -> 
+                            showAlert("Error", 
+                                "Network error while making reservation: " + e.getMessage())
+                        );
+                        return null;
+                    });
             }
             return null;
         });

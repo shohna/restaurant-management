@@ -15,11 +15,16 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.io.IOException;
 import java.sql.*;
 
 import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
 import javafx.scene.chart.*;
+import application.model.entity.Order;
+import application.network.client.RMSClient;
+import application.network.message.MessageType;
 
 public class StaffController {
 
@@ -65,8 +70,55 @@ public class StaffController {
 	private Map<Integer, TableButton> tableButtons = new HashMap<>();
 	private TableButton selectedTable = null;
 
+	private RMSClient client;
+	private Timeline networkUpdateTimer;
+
 	@FXML
-	public void initialize() {
+	public void initialize() throws IOException {
+
+		// Initialize network client
+		initializeNetworkConnection();
+
+		timeColumn.setCellValueFactory(cellData -> {
+			if (cellData.getValue() != null && cellData.getValue().getTime() != null) {
+				LocalDateTime dateTime = cellData.getValue().getTime();
+				String formattedTime = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd h:mm a"));
+				return new SimpleStringProperty(formattedTime);
+			}
+			return new SimpleStringProperty("");
+		});
+
+		nameColumn.setCellValueFactory(cellData -> {
+			if (cellData.getValue() != null) {
+				return new SimpleStringProperty(cellData.getValue().getName());
+			}
+			return new SimpleStringProperty("");
+		});
+
+		guestsColumn.setCellValueFactory(cellData -> {
+			if (cellData.getValue() != null) {
+				return new SimpleStringProperty(String.valueOf(cellData.getValue().getGuests()));
+			}
+			return new SimpleStringProperty("");
+		});
+
+		statusColumn.setCellValueFactory(cellData -> {
+			if (cellData.getValue() != null) {
+				return new SimpleStringProperty(cellData.getValue().getStatus());
+			}
+			return new SimpleStringProperty("");
+		});
+
+		// Make sure the table is not null and visible
+		if (reservationsTable != null) {
+			reservationsTable.setVisible(true);
+		} else {
+			System.err.println("reservationsTable is null!");
+		}
+
+		// Setup periodic updates
+		setupNetworkUpdates();
+
 		setupClock();
 		setupTables();
 		loadReservations();
@@ -76,6 +128,99 @@ public class StaffController {
 		readyToServeOrdersList.setItems(readyToServeOrders);
 		processedOrdersList.setItems(processedOrders);
 
+		startListeningForUpdates();
+	}
+
+	private void initializeNetworkConnection() {
+		try {
+			System.out.println("Attempting to connect to server...");
+			client = new RMSClient("localhost", 5000);
+			System.out.println("Successfully connected to server");
+		} catch (IOException e) {
+			Platform.runLater(() -> {
+				showAlert("Connection Error",
+						"Could not connect to server: " + e.getMessage() +
+								"\nSome features may not be available.");
+			});
+			e.printStackTrace();
+		}
+	}
+
+	private void startListeningForUpdates() {
+		Thread listenerThread = new Thread(() -> {
+			try {
+				while (!Thread.currentThread().isInterrupted()) {
+					client.sendMessage(MessageType.GET_UPDATES, null)
+							.thenAccept(response -> {
+								if (response.getType() == MessageType.SUCCESS) {
+									@SuppressWarnings("unchecked")
+									Map<String, Object> updates = (Map<String, Object>) response.getPayload();
+
+									Platform.runLater(() -> {
+										if (updates.containsKey("reservations")) {
+											@SuppressWarnings("unchecked")
+											List<Map<String, Object>> reservations = (List<Map<String, Object>>) updates
+													.get("reservations");
+											updateReservationsFromMaps(reservations);
+										}
+									});
+								}
+							})
+							.exceptionally(e -> {
+								System.err.println("Update error: " + e.getMessage());
+								return null;
+							});
+
+					// Increase the delay between updates to reduce server load
+					Thread.sleep(5000); // Check every 5 seconds instead of 2
+				}
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		});
+
+		listenerThread.setDaemon(true);
+		listenerThread.start();
+	}
+
+	private void updateReservationsFromMaps(List<Map<String, Object>> reservationMaps) {
+		List<Reservation> reservations = reservationMaps.stream()
+				.map(map -> {
+					try {
+						LocalDateTime time = LocalDateTime.parse(
+								(String) map.get("time"),
+								DateTimeFormatter.ofPattern("yyyy-MM-dd h:mm a", Locale.ENGLISH));
+
+						return new Reservation(
+								time,
+								(String) map.get("name"),
+								((Number) map.get("guests")).intValue(),
+								(String) map.get("status"));
+					} catch (Exception e) {
+						System.err.println("Error parsing reservation: " + map);
+						return null;
+					}
+				})
+				.filter(Objects::nonNull)
+				.collect(Collectors.toList());
+
+		ObservableList<Reservation> observableReservations = FXCollections.observableArrayList(reservations);
+		reservationsTable.setItems(observableReservations);
+	}
+
+	private void updateReservationsTable(List<Reservation> reservations) {
+		ObservableList<Reservation> observableReservations = FXCollections.observableArrayList(reservations);
+		reservationsTable.setItems(observableReservations);
+	}
+
+	private void setupNetworkUpdates() {
+		networkUpdateTimer = new Timeline(new KeyFrame(Duration.seconds(30), e -> {
+			loadReservations();
+			// fetchOrderUpdates();
+			// fetchTableStatuses();
+		}));
+		networkUpdateTimer.setCycleCount(Timeline.INDEFINITE);
+		networkUpdateTimer.play();
 	}
 
 	private void setupClock() {
@@ -123,23 +268,21 @@ public class StaffController {
 
 	@FXML
 	private void reloadOrdersAndKitchen() {
-	    List<String> orders = fetchKitchenOrders();
+		List<String> orders = fetchKitchenOrders();
 
-	    // Add only new orders to In Queue
-	    for (String order : orders) {
-	        if (!inQueueOrders.contains(order) && !readyToServeOrders.contains(order) && !processedOrders.contains(order)) {
-	            inQueueOrders.add(order);
-	        }
-	    }
+		// Add only new orders to In Queue
+		for (String order : orders) {
+			if (!inQueueOrders.contains(order) && !readyToServeOrders.contains(order)
+					&& !processedOrders.contains(order)) {
+				inQueueOrders.add(order);
+			}
+		}
 
-	    // Update ListViews
-	    inQueueOrdersList.setItems(inQueueOrders);
-	    readyToServeOrdersList.setItems(readyToServeOrders);
-	    processedOrdersList.setItems(processedOrders);
+		// Update ListViews
+		inQueueOrdersList.setItems(inQueueOrders);
+		readyToServeOrdersList.setItems(readyToServeOrders);
+		processedOrdersList.setItems(processedOrders);
 	}
-
-
-	
 
 	// Fetch orders for display in Kitchen Orders
 	private List<String> fetchKitchenOrders() {
@@ -189,52 +332,49 @@ public class StaffController {
 
 	@FXML
 	private void handleClearTable() {
-	    TableButton selectedTable = tableButtons.values().stream()
-	            .filter(TableButton::isSelected) // Check for selection
-	            .findFirst()
-	            .orElse(null);
+		TableButton selectedTable = tableButtons.values().stream()
+				.filter(TableButton::isSelected) // Check for selection
+				.findFirst()
+				.orElse(null);
 
-	    if (selectedTable == null) {
-	        showAlert("No Table Selected", "Please select a table to clear.");
-	        return;
-	    }
+		if (selectedTable == null) {
+			showAlert("No Table Selected", "Please select a table to clear.");
+			return;
+		}
 
-	    Optional<ButtonType> result = showConfirmationDialog(
-	            "Clear Table", "Are you sure you want to clear this table?", 
-	            "This will mark the table as available."
-	    );
+		Optional<ButtonType> result = showConfirmationDialog(
+				"Clear Table", "Are you sure you want to clear this table?",
+				"This will mark the table as available.");
 
-	    if (result.isPresent() && result.get() == ButtonType.OK) {
-	        int tableId = selectedTable.getTableId();
-	        updateTableStatusInDatabase(tableId, "AVAILABLE");
+		if (result.isPresent() && result.get() == ButtonType.OK) {
+			int tableId = selectedTable.getTableId();
+			updateTableStatusInDatabase(tableId, "AVAILABLE");
 
-	        // Immediately clear the table and force UI update
-	        selectedTable.clearTable();
-	        Platform.runLater(() -> {
-	            selectedTable.setStyle("-fx-background-color: green; -fx-text-fill: white;");
-	        });
+			// Immediately clear the table and force UI update
+			selectedTable.clearTable();
+			Platform.runLater(() -> {
+				selectedTable.setStyle("-fx-background-color: green; -fx-text-fill: white;");
+			});
 
-	        statusLabel.setText("Table " + tableId + " cleared successfully.");
-	    }
+			statusLabel.setText("Table " + tableId + " cleared successfully.");
+		}
 	}
 
-
-	
 	private void updateTableStatusInDatabase(int tableId, String status) {
-	    String query = "UPDATE tables SET status = ? WHERE id = ?";
+		String query = "UPDATE tables SET status = ? WHERE id = ?";
 
-	    try (Connection conn = DatabaseConnection.getConnection();
-	         PreparedStatement stmt = conn.prepareStatement(query)) {
+		try (Connection conn = DatabaseConnection.getConnection();
+				PreparedStatement stmt = conn.prepareStatement(query)) {
 
-	        stmt.setString(1, status);
-	        stmt.setInt(2, tableId);
-	        stmt.executeUpdate();
-	    } catch (SQLException e) {
-	        e.printStackTrace();
-	        showAlert("Database Error", "Failed to update the table status.");
-	    }
+			stmt.setString(1, status);
+			stmt.setInt(2, tableId);
+			stmt.executeUpdate();
+		} catch (SQLException e) {
+			e.printStackTrace();
+			showAlert("Database Error", "Failed to update the table status.");
+		}
 	}
-	
+
 	@FXML
 	private ListView<String> inQueueOrdersList;
 	@FXML
@@ -301,63 +441,96 @@ public class StaffController {
 	}
 
 	private void setupTables() {
-	    // Create a 3x4 grid of tables (12 tables total)
-	    for (int i = 0; i < 3; i++) {
-	        for (int j = 0; j < 4; j++) {
-	            int tableId = (i * 4) + j + 1; // Unique table ID for each table
-	            TableButton tableButton = new TableButton(tableId, "Table " + tableId);
-	            tableButton.setPrefSize(150, 150);
+		// Create a 3x4 grid of tables (12 tables total)
+		for (int i = 0; i < 3; i++) {
+			for (int j = 0; j < 4; j++) {
+				int tableId = (i * 4) + j + 1; // Unique table ID for each table
+				TableButton tableButton = new TableButton(tableId, "Table " + tableId);
+				tableButton.setPrefSize(150, 150);
 
-	            tableButtons.put(tableId, tableButton); // Add tableButton to the map
+				tableButtons.put(tableId, tableButton); // Add tableButton to the map
 
-	            // Click handler for selecting the table
-	            tableButton.setOnAction(e -> {
-	                if (selectedTable != null) {
-	                    selectedTable.setSelected(false);
-	                }
-	                tableButton.setSelected(true);
-	                selectedTable = tableButton;
-	                handleTableClick(tableId);
-	            });
+				// Click handler for selecting the table
+				tableButton.setOnAction(e -> {
+					if (selectedTable != null) {
+						selectedTable.setSelected(false);
+					}
+					tableButton.setSelected(true);
+					selectedTable = tableButton;
+					handleTableClick(tableId);
+				});
 
-	            GridPane.setFillWidth(tableButton, true);
-	            GridPane.setFillHeight(tableButton, true);
-	            tablesGrid.add(tableButton, j, i);
-	        }
-	    }
+				GridPane.setFillWidth(tableButton, true);
+				GridPane.setFillHeight(tableButton, true);
+				tablesGrid.add(tableButton, j, i);
+			}
+		}
 
-	    tablesGrid.setHgap(20);
-	    tablesGrid.setVgap(20);
-	    tablesGrid.setPadding(new Insets(20));
+		tablesGrid.setHgap(20);
+		tablesGrid.setVgap(20);
+		tablesGrid.setPadding(new Insets(20));
 	}
-
 
 	private void handleTableClick(int tableNumber) {
-	    TableButton clickedTable = tableButtons.get(tableNumber);
-	    if (clickedTable != null) {
-	        if (selectedTable != null) {
-	            selectedTable.setSelected(false); // Deselect the previous table
-	        }
-	        clickedTable.setSelected(true); // Select the new table
-	        selectedTable = clickedTable;
-	    }
+		TableButton clickedTable = tableButtons.get(tableNumber);
+		if (clickedTable != null) {
+			if (selectedTable != null) {
+				selectedTable.setSelected(false); // Deselect the previous table
+			}
+			clickedTable.setSelected(true); // Select the new table
+			selectedTable = clickedTable;
+		}
 	}
 
-
 	private void loadReservations() {
-		ObservableList<Reservation> reservations = FXCollections.observableArrayList(
-				new Reservation(LocalDateTime.now().plusHours(1), "John Smith", 4, "Confirmed"),
-				new Reservation(LocalDateTime.now().plusHours(2), "Sarah Johnson", 2, "Pending"),
-				new Reservation(LocalDateTime.now().plusHours(3), "Mike Brown", 6, "Confirmed"));
+		System.out.println("Loading reservations...");
+		client.sendMessage(MessageType.GET_ALL_RESERVATIONS, null)
+				.thenAccept(response -> {
+					System.out.println("Received response: " + response.getType());
+					if (response.getType() == MessageType.SUCCESS) {
+						@SuppressWarnings("unchecked")
+						List<Map<String, Object>> reservationMaps = (List<Map<String, Object>>) response.getPayload();
 
-		timeColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getTime().format(
-				DateTimeFormatter.ofPattern("HH:mm"))));
-		nameColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getName()));
-		guestsColumn.setCellValueFactory(
-				cellData -> new SimpleStringProperty(String.valueOf(cellData.getValue().getGuests())));
-		statusColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getStatus()));
+						List<Reservation> reservations = reservationMaps.stream()
+								.map(map -> {
+									try {
+										// Parse the datetime string with 12-hour format
+										String timeStr = (String) map.get("time");
+										LocalDateTime time = LocalDateTime.parse(
+												timeStr,
+												DateTimeFormatter.ofPattern("yyyy-MM-dd h:mm a", Locale.ENGLISH));
 
-		reservationsTable.setItems(reservations);
+										Reservation reservation = new Reservation(
+												time,
+												(String) map.get("name"),
+												((Number) map.get("guests")).intValue(),
+												(String) map.get("status"));
+
+										System.out.println("Successfully parsed reservation: " + reservation);
+										return reservation;
+									} catch (Exception e) {
+										System.err.println("Error parsing reservation data: " + map);
+										e.printStackTrace();
+										return null;
+									}
+								})
+								.filter(Objects::nonNull)
+								.collect(Collectors.toList());
+
+						Platform.runLater(() -> {
+							ObservableList<Reservation> observableReservations = FXCollections
+									.observableArrayList(reservations);
+							reservationsTable.setItems(observableReservations);
+							System.out.println("Table updated with " + observableReservations.size() + " items");
+						});
+					} else {
+						System.out.println("Error response: " + response.getPayload());
+					}
+				}).exceptionally(e -> {
+					System.err.println("Error loading reservations: " + e.getMessage());
+					e.printStackTrace();
+					return null;
+				});
 	}
 
 	@FXML
@@ -452,63 +625,59 @@ public class StaffController {
 				"Table Usage Report",
 				"Server Performance Report");
 	}
-	
-	private void moveOrderToReady(String orderDetails) {
-	    inQueueOrders.remove(orderDetails);
-	    readyToServeOrders.add(orderDetails);
 
-	    // Update order status in the database
-	    int orderId = extractOrderId(orderDetails);
-	    updateOrderStatus(orderId, "READY_TO_SERVE");
+	private void moveOrderToReady(String orderDetails) {
+		inQueueOrders.remove(orderDetails);
+		readyToServeOrders.add(orderDetails);
+
+		// Update order status in the database
+		int orderId = extractOrderId(orderDetails);
+		updateOrderStatus(orderId, "READY_TO_SERVE");
 	}
-	
+
 	@FXML
 	private void handleMoveOrderToReady() {
-	    String selectedOrder = inQueueOrdersList.getSelectionModel().getSelectedItem();
+		String selectedOrder = inQueueOrdersList.getSelectionModel().getSelectedItem();
 
-	    if (selectedOrder != null) {
-	        // Remove from In Queue list
-	        inQueueOrders.remove(selectedOrder);
+		if (selectedOrder != null) {
+			// Remove from In Queue list
+			inQueueOrders.remove(selectedOrder);
 
-	        // Add to Ready to Serve list
-	        readyToServeOrders.add(selectedOrder);
+			// Add to Ready to Serve list
+			readyToServeOrders.add(selectedOrder);
 
-	        // Update status in the database
-	        int orderId = extractOrderId(selectedOrder);
-	        updateOrderStatus(orderId, "READY_TO_SERVE");
+			// Update status in the database
+			int orderId = extractOrderId(selectedOrder);
+			updateOrderStatus(orderId, "READY_TO_SERVE");
 
-	        showAlert("Order Moved", "Order has been moved to 'Ready to Serve'.");
-	    } else {
-	        showAlert("No Order Selected", "Please select an order to move to 'Ready to Serve'.");
-	    }
+			showAlert("Order Moved", "Order has been moved to 'Ready to Serve'.");
+		} else {
+			showAlert("No Order Selected", "Please select an order to move to 'Ready to Serve'.");
+		}
 	}
-
 
 	private void updateOrderStatus(int orderId, String status) {
-	    String query = "UPDATE orders SET status = ? WHERE id = ?";
-	    try (Connection conn = DatabaseConnection.getConnection();
-	         PreparedStatement stmt = conn.prepareStatement(query)) {
-	        stmt.setString(1, status);
-	        stmt.setInt(2, orderId);
-	        stmt.executeUpdate();
-	    } catch (SQLException e) {
-	        e.printStackTrace();
-	    }
+		String query = "UPDATE orders SET status = ? WHERE id = ?";
+		try (Connection conn = DatabaseConnection.getConnection();
+				PreparedStatement stmt = conn.prepareStatement(query)) {
+			stmt.setString(1, status);
+			stmt.setInt(2, orderId);
+			stmt.executeUpdate();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 	}
 
-
-
-	
 	@FXML
 	private void handleMarkAsServed() {
-	    String selectedOrder = readyToServeOrdersList.getSelectionModel().getSelectedItem();
-	    if (selectedOrder != null) {
-	        readyToServeOrders.remove(selectedOrder);
-	        processedOrders.add(selectedOrder);
-	        showAlert("Order Processed", "Order has been marked as served.");
-	    } else {
-	        showAlert("No Order Selected", "Please select an order to mark as served.");
-	    }
+		String selectedOrder = readyToServeOrdersList.getSelectionModel().getSelectedItem();
+		if (selectedOrder != null) {
+			readyToServeOrders.remove(selectedOrder);
+			processedOrders.add(selectedOrder);
+			showAlert("Order Processed", "Order has been marked as served.");
+		} else {
+			showAlert("No Order Selected", "Please select an order to mark as served.");
+		}
 	}
 
 	// Utility Methods
