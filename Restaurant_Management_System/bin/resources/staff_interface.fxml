@@ -18,8 +18,6 @@
 			styleClass="nav-title" />
 		<Region HBox.hgrow="ALWAYS" />
 		<Label fx:id="timeLabel" styleClass="time-label" />
-		<Button text="Logout" onAction="#handleLogout"
-			styleClass="logout-button" />
 	</HBox>
 
 	<!-- Main Content -->
@@ -41,27 +39,38 @@
 
 		<!-- Orders Tab -->
 		<!-- Orders Tab -->
-<Tab text="Orders" closable="false">
-    <VBox spacing="10">
-        <padding>
-            <Insets top="10" right="10" bottom="10" left="10"/>
-        </padding>
-        <!-- Reload Button -->
-        <HBox spacing="10">
-            <Button text="Reload All" onAction="#reloadOrdersAndKitchen" styleClass="reload-button"/>
-        </HBox>
+		<Tab text="Orders" closable="false">
+			<VBox spacing="10">
+				<padding>
+					<Insets top="20" right="20" bottom="20" left="20" />
+				</padding>
+				<HBox spacing="20" alignment="CENTER">
+					<!-- In Queue Section -->
+					<VBox spacing="10">
+						<Label text="In Queue" styleClass="section-header" />
+						<ListView fx:id="inQueueOrdersList" prefHeight="200" />
+						<Button text="Move to Ready"
+							onAction="#handleMoveOrderToReady" />
+					</VBox>
 
-        <!-- Kitchen Orders Section -->
-        <VBox spacing="10">
-            <Label text="Kitchen Orders" styleClass="section-header"/>
-            <ListView fx:id="kitchenOrdersList" VBox.vgrow="ALWAYS"/>
-            <HBox spacing="10" alignment="CENTER_LEFT">
-                <ComboBox fx:id="orderStatusCombo" promptText="Update Status"/>
-                <Button text="Update Status" onAction="#handleUpdateKitchenOrder"/>
-            </HBox>
-        </VBox>
-    </VBox>
-</Tab>
+					<!-- Ready to Serve Section -->
+					<!-- Ready to Serve Section -->
+					<VBox spacing="10">
+						<Label text="Ready to Serve" styleClass="section-header" />
+						<ListView fx:id="readyToServeOrdersList" prefHeight="200" />
+						<Button text="Mark as Served"
+							onAction="#handleMarkAsServed" />
+					</VBox>
+
+
+					<!-- Processed Orders Section -->
+					<VBox spacing="10">
+						<Label text="Processed Orders" styleClass="section-header" />
+						<ListView fx:id="processedOrdersList" prefHeight="200" />
+					</VBox>
+				</HBox>
+			</VBox>
+		</Tab>
 
 
 		<!-- Reservations Tab -->
@@ -91,8 +100,6 @@
 				<padding>
 					<Insets top="20" right="20" bottom="20" left="20" />
 				</padding>
-
-				<!-- Report Controls -->
 				<HBox spacing="10" alignment="CENTER_LEFT">
 					<ComboBox fx:id="reportTypeCombo"
 						promptText="Select Report Type" />
@@ -102,8 +109,6 @@
 					<Button text="Generate Report"
 						onAction="#handleGenerateReport" />
 				</HBox>
-
-				<!-- Charts -->
 				<TabPane>
 					<Tab text="Sales">
 						<LineChart fx:id="salesChart">

@@ -21,7 +21,6 @@ public class DatabaseConnection {
     private static void enableWALMode(Connection conn) {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("PRAGMA journal_mode = WAL;");
-            System.out.println("SQLite WAL mode enabled.");
         } catch (SQLException e) {
             System.err.println("Failed to enable WAL mode: " + e.getMessage());
         }

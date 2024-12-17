@@ -255,29 +255,6 @@ public class CustomerController {
                 .sum();
     }
 
-    private void showOrderSummary(double total) {
-        Dialog<String> dialog = new Dialog<>();
-        dialog.setTitle("Order Summary");
-
-        VBox content = new VBox(10);
-        content.setPadding(new Insets(10));
-
-        for (MenuItem item : selectedItems) {
-            Label itemLabel = new Label(item.getName() + " - $" + item.getPrice());
-            content.getChildren().add(itemLabel);
-        }
-
-        Label totalLabel = new Label("Total: $" + String.format("%.2f", total));
-        totalLabel.getStyleClass().add("total-label");
-        content.getChildren().add(totalLabel);
-
-        DialogPane dialogPane = dialog.getDialogPane();
-        dialogPane.setContent(content);
-        dialogPane.getButtonTypes().add(ButtonType.CLOSE);
-
-        dialog.showAndWait();
-    }
-
     private void showAlert(String title, String content) {
         Alert alert = new Alert(Alert.AlertType.WARNING);
         alert.setTitle(title);
